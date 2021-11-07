@@ -6,5 +6,8 @@
 | компонент системы AUTH | используемая библиотека |
 | -----------------------|-------------------------|
 | хранение токенов в redis | redis-py |
-| аутентификация           | flask-security |
-| работа с postgresql      | SQLAlchemy
+| Механизмы работы с сессиями | flask-security |
+| работа с postgresql      | SqlAlchemy |
+| генерация и валидация jwt | flask-jwt-extended |
+| interproc messages        | grpcio 
+
