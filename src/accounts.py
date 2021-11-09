@@ -25,8 +25,7 @@ def register():
         if User.query.filter_by(login=login).first() is not None:
             return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}, 400)
         try:
-            timestamp = datetime.now()
-            user = User(login=login, created_at=timestamp)
+            user = User(login=login)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
