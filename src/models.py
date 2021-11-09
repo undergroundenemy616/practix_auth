@@ -26,7 +26,8 @@ class Role(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True)
     name = db.Column(db.String, unique=True)
     description = db.Column(db.String)
-    permissions = db.relationship('Permission', secondary=role_permission, backref=db.backref('roles', lazy='dynamic'))
+    permissions = db.relationship('Permission', secondary=role_permission,
+                                  backref=db.backref('roles', lazy='dynamic'))
     users = db.relationship('User', backref="role")
 
     def __str__(self):
@@ -41,14 +42,10 @@ class User(db.Model):
     password = db.Column(db.String, nullable=False)
     name = db.Column(db.String)
     email = db.Column(db.String, unique=True)
-    created_on = db.Column(db.DateTime(), default=datetime.utcnow)
-    updated_on = db.Column(db.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
-    active = db.Column(db.Boolean())
-    history = db.relationship('AuthHistory', backref='user')
-    role_id = db.Column(UUID(as_uuid=True), db.ForeignKey('role.id'))
-
-    def get_id(self):
-        return self.id
+    created_at = db.Column(db.DateTime(), default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+    history = db.relationship('History', backref='user')
+    role_id = db.Column(UUID(as_uuid=True), db.ForeignKey('role.id', ondelete='SET NULL'))
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -60,14 +57,14 @@ class User(db.Model):
         return f'<User {self.login}>'
 
 
-class AuthHistory(db.Model):
+class History(db.Model):
     __tablename__ = 'history'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-    user_id = db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('user.id'))
+    user_id = db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('user.id', ondelete='CASCADE'))
     user_agent = db.Column(db.String)
     date = db.Column(db.DateTime(), default=datetime.utcnow)
-    additional_info = db.Column(db.String)
+    info = db.Column(db.String)
 
     def __str__(self):
         return f'<History {self.user_id}>'

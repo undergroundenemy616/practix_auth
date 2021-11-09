@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 
 class BaseConfig:
@@ -19,9 +18,8 @@ class BaseConfig:
     # Корень проекта
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    SECURITY_PASSWORD_HASH = os.getenv('SECURITY_PASSWORD_HASH', '')
-    SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT', '')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 class DevelopmentBaseConfig(BaseConfig):
@@ -30,4 +28,3 @@ class DevelopmentBaseConfig(BaseConfig):
 
 class ProductionBaseConfig(BaseConfig):
     DEBUG = False
-
