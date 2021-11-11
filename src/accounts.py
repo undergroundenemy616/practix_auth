@@ -4,14 +4,11 @@ from marshmallow import ValidationError
 
 import redis
 from db.pg_db import db
+from db.redis_db import redis_db
 from models import User, History
 from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate
 
 accounts = Blueprint('accounts', __name__)
-
-jwt_redis_blocklist = redis.StrictRedis(
-    host="localhost", port=6379, db=0, decode_responses=True
-)
 
 
 @accounts.route('/register', methods=['POST'])
@@ -54,7 +51,9 @@ def sign_in():
             refresh_token = create_refresh_token(identity=login)
 
             user_agent = request.headers.get('User-Agent')
-            history_entry = History(user_id=user.id, user_agent=user_agent, info='User logged in')
+            history_entry = History(user_id=user.id,
+                                    user_agent=user_agent,
+                                    info='User logged in')
             db.session.add(history_entry)
             db.session.commit()
 
@@ -97,7 +96,9 @@ def update():
             User.query.filter_by(id=user.id).update(new_user_info)
 
             user_agent = request.headers.get('User-Agent')
-            history_entry = History(user_id=user.id, user_agent=user_agent, info='User info updated')
+            history_entry = History(user_id=user.id,
+                                    user_agent=user_agent,
+                                    info='User info updated')
             db.session.add(history_entry)
             db.session.commit()
 
@@ -113,12 +114,14 @@ def logout():
     user = User.query.filter_by(login=login).first()
 
     user_agent = request.headers.get('User-Agent')
-    history_entry = History(user_id=user.id, user_agent=user_agent, info='User logged off')
+    history_entry = History(user_id=user.id,
+                            user_agent=user_agent,
+                            info='User logged off')
     db.session.add(history_entry)
     db.session.commit()
 
     jti = get_jwt()["jti"]
-    jwt_redis_blocklist.set(jti, "", ex=EXPIRES)
+    redis_db(jti, "", ex=EXPIRES)
     return jsonify({
         'message': f'Сеанс пользователя {login} успешно завершен'
     }), 200
