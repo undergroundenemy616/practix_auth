@@ -1,5 +1,8 @@
 from pprint import pprint
 import click
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from marshmallow import ValidationError
 
 from utils import register_user
 
