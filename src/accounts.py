@@ -1,41 +1,52 @@
 import logging
-from datetime import datetime
+from pprint import pprint
+
+import click
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token
 from marshmallow import ValidationError
 
 from db.pg_db import db
-from models import User
+
+from models import User, History
 from schemas import UserLoginSchema
+from utils import register_user
+
 
 accounts = Blueprint('accounts', __name__)
 logging.basicConfig(level=logging.INFO)
 
 
+@accounts.cli.command("createsuperuser")
+@click.argument("login")
+@click.argument("password")
+def create_user(login, password):
+    result = register_user(login, password, superuser=True)
+    pprint(result[0])
+
+
 @accounts.route('/register', methods=['POST'])
 def register():
+    return register_user(**request.get_json())
+
+
+@accounts.route('/login', methods=['POST'])
+def sign_in():
     try:
-        user = UserLoginSchema().load(request.get_json())
+        user_try = UserLoginSchema().load(request.get_json())
     except ValidationError as e:
-        return jsonify(e.messages, 400)
-    else:
-        login = user['login']
-        password = user['password']
-        if User.query.filter_by(login=login).first() is not None:
-            return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}, 400)
-        try:
-            user = User(login=login)
-            user.set_password(password)
-            db.session.add(user)
-            db.session.commit()
-            access_token = create_access_token(identity=login)
-            refresh_token = create_refresh_token(identity=login)
-            return jsonify({
-                'message': f'User {login} was created',
-                'access_token': access_token,
-                'refresh_token': refresh_token
-            }, 201)
-        except Exception as e:
-            logging.error(f'Пользователь {login} не зарегистрирован: {e}')
-            return jsonify({'error': 'Ошибка сервера'}, 500)
+        return jsonify(e.messages), 400
+    login_try = user_try['login']
+    password_try = user_try['password']
+    user = User.query.filter_by(login=login_try).first()
+    if user and user.check_password(password_try):
+        login = login_try
+        access_token = create_access_token(identity=login)
+        refresh_token = create_refresh_token(identity=login)
+        return jsonify({
+            'message': f'User {login} was created',
+            'access_token': access_token,
+            'refresh_token': refresh_token
+        }, 201)
+

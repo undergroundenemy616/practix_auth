@@ -4,6 +4,7 @@ import os
 class BaseConfig:
     SECRET_KEY = os.getenv('SECRET_KEY', '')
     DEBUG = False
+    TESTING = False
     # Настройки Redis
     REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PORT = os.getenv('REDIS_PORT', 6379)
@@ -28,3 +29,8 @@ class DevelopmentBaseConfig(BaseConfig):
 
 class ProductionBaseConfig(BaseConfig):
     DEBUG = False
+
+
+class TestBaseConfig(BaseConfig):
+    DEBUG = False
+    TESTING = True

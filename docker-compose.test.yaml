@@ -2,17 +2,11 @@ version: '3.8'
 services:
   auth-redis:
     image: redis:6.2.6-alpine
-    volumes:
-      - auth_redis_data:/var/lib/redis/data
-#    restart: always
 
   auth-db:
     image: postgres:12
     env_file:
       - ./.env
-    volumes:
-      - auth_db_data:/var/lib/postgresql/data/
-#    restart: always
 
   auth:
     build:
@@ -27,8 +21,18 @@ services:
     depends_on:
       - auth-db
       - auth-redis
-#    restart: always
 
-volumes:
-  auth_db_data:
-  auth_redis_data:
+  test:
+    build:
+      context: tests/functional/
+      dockerfile: Dockerfile
+    entrypoint: >
+      sh -c "pytest /code/src"
+    env_file:
+      - ./.env
+    volumes:
+      - ./tests/functional:/code
+    depends_on:
+      - auth-redis
+      - auth-db
+      - auth
