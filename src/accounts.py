@@ -1,21 +1,16 @@
-import logging
 from pprint import pprint
-
 import click
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 from marshmallow import ValidationError
 
-from db.pg_db import db
-
-from models import User, History
-from schemas import UserLoginSchema
 from utils import register_user
 
+from models import User
+from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate
 
 accounts = Blueprint('accounts', __name__)
-logging.basicConfig(level=logging.INFO)
 
 
 @accounts.cli.command("createsuperuser")
@@ -44,9 +39,46 @@ def sign_in():
         login = login_try
         access_token = create_access_token(identity=login)
         refresh_token = create_refresh_token(identity=login)
+
         return jsonify({
-            'message': f'User {login} was created',
             'access_token': access_token,
             'refresh_token': refresh_token
-        }, 201)
+        }), 200
 
+    return jsonify({
+        'error': 'Неверная пара логин-пароль',
+    }), 403
+
+
+@accounts.route('/update', methods=['GET', 'POST'])
+@jwt_required()
+def update():
+    login = get_jwt_identity()
+    user = User.query.filter_by(login=login).first()
+
+    if not user:
+        return jsonify({
+            'error': 'Ошибка доступа',
+        }), 403
+
+    if request.method == "GET":
+        result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
+        return result
+
+    try:
+        new_user_info = UserSchemaUpdate().load(request.get_json(), partial=True)
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+
+    if new_login := new_user_info.get('login', None):
+        if User.query.filter(User.login == new_login, User.id != user.id).first():
+            return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}), 400
+
+    if new_password := new_user_info.pop('password', None):
+        user.set_password(new_password)
+
+    User.query.filter_by(id=user.id).update(new_user_info)
+
+    return jsonify({
+        'message': f'Пользователь {login} успешно обновлен',
+    }), 200

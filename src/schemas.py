@@ -15,13 +15,14 @@ def must_not_be_blank(data):
         raise ValidationError("Поле должно быть заполнено.")
 
 
-class UserUpdateSchema(Schema):
-    login = fields.String(required=True, error_messages={'required': 'Поле должно быть заполнено.'},
-                          validate=must_not_be_blank)
-    password = fields.String(required=True, error_messages={'required': 'Поле должно быть заполнено.'},
-                             validate=validate_password)
+class UserSchemaDetailed(Schema):
+    login = fields.String()
     name = fields.String()
     email = fields.Email()
+
+
+class UserSchemaUpdate(UserSchemaDetailed):
+    password = fields.String(validate=validate_password)
 
 
 class UserLoginSchema(Schema):
