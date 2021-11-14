@@ -4,6 +4,8 @@ from urllib.parse import urljoin
 
 import pytest
 import aiohttp
+from sqlalchemy import MetaData
+from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.future import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base
 
@@ -50,6 +52,22 @@ def db_session(db_session_factory):
     yield session
     session.rollback()
     session.close()
+
+
+@pytest.fixture(scope='function')
+async def db_setup(db_engine, db_session):
+    metadata = MetaData(bind=db_engine)
+    metadata.reflect(db_engine)
+    Base = automap_base(metadata=metadata)
+    Base.prepare()
+    User = Base.classes.user
+    test_user = User(id="5a8bad1b-586d-4283-a11c-af232bfd0005", login="Testtest", password="paSSword1999")
+    db_session.add(test_user)
+    db_session.commit()
+    yield
+    db_session.query(User).delete()
+    db_session.commit()
+    db_engine.dispose()
 
 
 @pytest.fixture(scope='session')
