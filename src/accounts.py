@@ -8,6 +8,7 @@ from utils import register_user
 
 from models import User
 from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate
+from db.pg_db import db
 
 accounts = Blueprint('accounts', __name__)
 
@@ -77,6 +78,7 @@ def update():
         user.set_password(new_password)
 
     User.query.filter_by(id=user.id).update(new_user_info)
+    db.session.commit()
 
     return jsonify({
         'message': f'Пользователь {login} успешно обновлен',

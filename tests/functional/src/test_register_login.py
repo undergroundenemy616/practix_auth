@@ -26,7 +26,7 @@ async def test_not_register_existing_login(make_post_request, db_setup):
 
 
 async def test_not_register_wrong_password(make_post_request, db_setup):
-    login = "Testtest"
+    login = "Testtest1"
     password = "123"
     response = await make_post_request(f"/api/v1/accounts/register", json_data={"login": login, "password": password})
 

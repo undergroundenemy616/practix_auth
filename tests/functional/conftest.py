@@ -36,7 +36,6 @@ def event_loop():
 def db_engine():
     engine = create_engine(
         f'postgresql://{config.pg_user}:{config.pg_password}@{config.pg_host}/{config.pg_db}',
-        echo=True
     )
     yield engine
 
@@ -46,7 +45,7 @@ def db_session_factory(db_engine):
     return scoped_session(sessionmaker(bind=db_engine))
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='session')
 def db_session(db_session_factory):
     session = db_session_factory()
     yield session
@@ -63,6 +62,7 @@ async def db_setup(db_engine, db_session):
     User = Base.classes.user
     test_user = User(id="5a8bad1b-586d-4283-a11c-af232bfd0005", login="Testtest", password="paSSword1999")
     db_session.add(test_user)
+    db_session.flush()
     db_session.commit()
     yield
     db_session.query(User).delete()
@@ -84,7 +84,7 @@ def make_get_request(session):
         url = urljoin(SERVICE_URL, method)
         async with session.get(url, headers=headers, params=params) as response:
             return HTTPResponse(
-                body=await response.json(),
+                body=await response.json(content_type=None),
                 headers=response.headers,
                 status=response.status,
             )
@@ -99,7 +99,7 @@ def make_post_request(session):
         url = urljoin(SERVICE_URL, method)
         async with session.post(url, headers=headers, json=json_data, params=params) as response:
             return HTTPResponse(
-                body=await response.json(),
+                body=await response.json(content_type=None),
                 headers=response.headers,
                 status=response.status,
             )
