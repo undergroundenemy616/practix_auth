@@ -90,3 +90,12 @@ async def test_update_user_email(get_token, make_post_request, make_get_request)
 
     assert response.status == HTTPStatus.OK
     assert response.body == {"email": new_email, "login": "Test", "name": None}
+
+
+async def test_not_update_user_wrong_email(get_token, make_post_request, make_get_request):
+    new_email = "Test"
+    response = await make_post_request(f"/api/v1/accounts/update",
+                                       json_data={"email": new_email},
+                                       headers={"Authorization": f"Bearer {get_token}"})
+    assert response.status == HTTPStatus.BAD_REQUEST
+    assert response.body["email"] == ['Not a valid email address.']
