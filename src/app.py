@@ -11,7 +11,6 @@ app = Flask(__name__)
 app.config.from_object(config.DevelopmentBaseConfig)
 init_db(app)
 migrate = Migrate(app, db)
-import models
 
 jwt = JWTManager(app)
 app.register_blueprint(permissions, url_prefix='/api/v1/permissions')

@@ -12,18 +12,41 @@ role_permission = db.Table(
 )
 
 
-class Permission(db.Model):
+class BaseModel(object):
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {self.id}>'
+
+    @classmethod
+    def get_paginated_data(cls, page: int or None, count: int or None, schema, filtered_kwargs=None) -> list:
+        page = int(page) if str(page).isdigit() else 1
+        count = int(count) if str(count).isdigit() else 20
+        if not filtered_kwargs:
+            objects = db.session.query(cls).all()
+        else:
+            objects = db.session.query(cls).filter_by(**filtered_kwargs)
+        serialized_paginated_objects = schema().dump(objects, many=True)[count * (page - 1):count * page]
+        return serialized_paginated_objects
+
+
+class Permission(db.Model, BaseModel):
     __tablename__ = 'permission'
-    id = db.Column(UUID(as_uuid=True), primary_key=True)
+
     name = db.Column(db.String, unique=True)
 
     def __str__(self):
         return f'<Permission {self.name}>'
 
 
-class Role(db.Model):
+class Role(db.Model, BaseModel):
     __tablename__ = 'role'
-    id = db.Column(UUID(as_uuid=True), primary_key=True)
+
     name = db.Column(db.String, unique=True)
     description = db.Column(db.String)
     permissions = db.relationship('Permission', secondary=role_permission,
@@ -34,10 +57,9 @@ class Role(db.Model):
         return f'<Role {self.name}>'
 
 
-class User(db.Model):
+class User(db.Model, BaseModel):
     __tablename__ = 'user'
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     login = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     name = db.Column(db.String)
@@ -57,10 +79,9 @@ class User(db.Model):
         return f'<User {self.login}>'
 
 
-class History(db.Model):
+class History(db.Model, BaseModel):
     __tablename__ = 'history'
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     user_id = db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('user.id', ondelete='CASCADE'))
     user_agent = db.Column(db.String)
     date = db.Column(db.DateTime(), default=datetime.utcnow)
