@@ -5,6 +5,7 @@ from datetime import timedelta
 class BaseConfig:
     SECRET_KEY = os.getenv('SECRET_KEY', '')
     DEBUG = False
+    TESTING = False
     # Настройки Redis
     REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PORT = os.getenv('REDIS_PORT', 6379)
@@ -21,7 +22,7 @@ class BaseConfig:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     JSON_AS_ASCII = False
 
@@ -32,3 +33,8 @@ class DevelopmentBaseConfig(BaseConfig):
 
 class ProductionBaseConfig(BaseConfig):
     DEBUG = False
+
+
+class TestBaseConfig(BaseConfig):
+    DEBUG = False
+    TESTING = True
