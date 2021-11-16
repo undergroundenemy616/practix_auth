@@ -1,15 +1,85 @@
+import functools
+import json
+
 from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
 from db.pg_db import db
-from models import Permission, Role
+from models import Permission, Role, User
 from schemas import (PermissionSchema, RoleCreateSchema, RoleSchema,
-                     RoleUpdateSchema)
+                     RoleUpdateSchema, RoleAssignSchema)
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 permissions = Blueprint('permissions', __name__)
 
 
+@permissions.cli.command("add_base_data")
+def add_base_data():
+    with open('db/fixtures/roles.json') as json_roles, open('db/fixtures/permissions.json') as json_permissions:
+        roles_data = json.load(json_roles)
+        permissions_data = json.load(json_permissions)
+        for permission in permissions_data:
+            if Permission.query.filter_by(name=permission['name']).first():
+                continue
+            db.session.add(Permission(name=permission['name']))
+        db.session.commit()
+        for role in roles_data:
+            if Role.query.filter_by(name=role['name']).first():
+                continue
+            role_permissions = role.pop('permissions', None)
+            role_obj = Role(**role)
+            if role_permissions:
+                role_permissions = [Permission.query.filter_by(name=permission).first() for permission in role_permissions]
+            role_obj.permissions.extend(role_permissions)
+            db.session.add(role_obj)
+        db.session.commit()
+
+
+def check_permission(required_permission: str):
+    def check_admin_inner(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            login = get_jwt_identity()
+            if not User.check_permission(login=login, required_permission=required_permission):
+                return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return check_admin_inner
+
+
+@permissions.route('check', methods=['GET'])
+@jwt_required()
+def permission_check():
+    required_permission = request.args.get('required_permission')
+    if not required_permission:
+        return jsonify({"type": "error", "message": "required_permission отсутствует в параметрах"}), 400
+    login = get_jwt_identity()
+    if not User.check_permission(login=login, required_permission=required_permission):
+        return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
+    return jsonify({"type": "success", "message": "Доступ разрешен"}), 200
+
+
+@permissions.route('/role/<uuid:id>/assign', methods=['PUT'])
+@jwt_required()
+@check_permission(required_permission='role')
+def role_assign(id):
+    if not Role.query.filter_by(id=id).first():
+        return jsonify({
+            'error': f'объект Role с id={id} не найден',
+        }), 404
+    if request.method == 'PUT':
+        data = request.get_json()
+        data['role_id'] = id
+        try:
+            RoleAssignSchema().load(data)
+        except ValidationError as e:
+            return jsonify(e.messages), 400
+        return jsonify({"type": "success", "message": "Роли обновлены"}), 200
+
+
 @permissions.route('/roles', methods=['GET', 'POST'])
+@jwt_required()
+@check_permission(required_permission='roles')
 def roles_list():
     if request.method == 'POST':
         try:
@@ -25,6 +95,8 @@ def roles_list():
 
 
 @permissions.route('/role/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
+@jwt_required()
+@check_permission(required_permission='role')
 def role_detail(id):
     role = Role.query.filter_by(id=id).first()
     if not role:
@@ -48,6 +120,8 @@ def role_detail(id):
 
 
 @permissions.route('/permissions', methods=['POST', 'GET'])
+@jwt_required()
+@check_permission(required_permission='permissions')
 def permission_list():
     if request.method == 'POST':
         try:
@@ -63,6 +137,8 @@ def permission_list():
 
 
 @permissions.route('/permission/<uuid:id>', methods=['DELETE'])
+@jwt_required()
+@check_permission(required_permission='permission')
 def permission_delete(id):
     permission = Permission.query.filter_by(id=id).first()
     if not permission:

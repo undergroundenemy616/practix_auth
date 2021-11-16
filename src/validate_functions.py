@@ -1,7 +1,7 @@
 import re
 
 from marshmallow import ValidationError
-from models import Role, Permission
+from models import Role, Permission, User
 
 
 def validate_password(password):
@@ -30,4 +30,11 @@ def validate_exist_permissions(permissions):
     for permission_id in permissions:
         permission = Permission.query.filter_by(id=permission_id).first()
         if not permission:
-            raise ValidationError(f"Право с id={permission} не существует")
+            raise ValidationError(f"Право с id={permission.id} не существует")
+
+
+def validate_exist_users(users):
+    for user_id in users:
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            raise ValidationError(f"Пользователь с id={user.id} не существует")

@@ -57,6 +57,10 @@ class Role(db.Model, BaseModel):
     def __str__(self):
         return f'<Role {self.name}>'
 
+    @property
+    def permissions_names(self):
+        return [permission.name for permission in self.permissions]
+
 
 class User(db.Model, BaseModel):
     __tablename__ = 'user'
@@ -75,6 +79,16 @@ class User(db.Model, BaseModel):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
+    @classmethod
+    def check_permission(cls, login, required_permission):
+        user = cls.query.filter_by(login=login).first()
+        if not user:
+            return False
+        user_role = Role.query.filter_by(id=user.role_id).first()
+        if required_permission not in user_role.permissions_names:
+            return False
+        return True
 
     def __str__(self):
         return f'<User {self.login}>'

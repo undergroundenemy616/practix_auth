@@ -15,9 +15,9 @@ def register_user(login, password, superuser=False):
     if User.query.filter_by(login=login).first():
         return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}), 400
     if superuser:
-        role_id = Role.query.filter_by(name='admin').first()
+        role_id = Role.query.filter_by(name='Admin').first().id
     else:
-        role_id = Role.query.filter_by(name='user').first()
+        role_id = Role.query.filter_by(name='BaseUser').first().id
     user = User(login=login, role_id=role_id)
     user.set_password(password)
     db.session.add(user)

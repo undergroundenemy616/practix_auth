@@ -2,7 +2,7 @@ from marshmallow import Schema, fields, post_load
 
 import validate_functions
 from db.pg_db import db
-from models import History, Permission, Role
+from models import History, Permission, Role, User
 
 
 class UserSchemaDetailed(Schema):
@@ -56,6 +56,18 @@ class RoleSchema(Schema):
     permissions = fields.Nested(PermissionSchema, many=True)
 
 
+class RoleAssignSchema(Schema):
+    role_id = fields.UUID()
+    users = fields.List(fields.UUID, validate=validate_functions.validate_exist_users, required=True)
+
+    @post_load
+    def assign_role(self, data, **kwargs):
+        User.query.filter(User.id.in_([data.pop('users')])).update({'role_id': data['role_id']},
+                                                                   synchronize_session=False)
+        db.session.commit()
+        return
+
+
 class RoleCreateSchema(RoleSchema):
     id = fields.UUID(dump_only=True)
     name = fields.String(validate=validate_functions.validate_role_name, required=True)
@@ -66,9 +78,8 @@ class RoleCreateSchema(RoleSchema):
         permissions = data.pop('permissions', None)
         role = Role(**data)
         if permissions:
-            for permission in permissions:
-                permission = Permission.query.filter_by(id=permission).first()
-                role.permissions.append(permission)
+            permissions = Permission.query.filter(Permission.id.in_([permissions]))
+            role.permissions.extend(permissions)
         db.session.add(role)
         db.session.commit()
         return role
@@ -84,9 +95,8 @@ class RoleUpdateSchema(RoleSchema):
         role.update(**data)
         if permissions:
             role.permissions = []
-            for permission in permissions:
-                permission = Permission.query.filter_by(id=permission).first()
-                role.permissions.append(permission)
+            permissions = Permission.query.filter(Permission.id.in_([permissions]))
+            role.permissions.extend(permissions)
         db.session.add(role)
         db.session.commit()
         return role
