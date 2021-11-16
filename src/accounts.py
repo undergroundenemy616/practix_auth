@@ -110,9 +110,7 @@ def after_request_func(response):
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if user:
-        history = UserHistorySchema().load({"user_id": str(user.id),
-                                            "user_agent": str(request.user_agent),
-                                            "info": f"{request.method} {request.path}"})
-        db.session.add(history)
-        db.session.commit()
+        UserHistorySchema().load({"user_id": str(user.id),
+                                  "user_agent": str(request.user_agent),
+                                  "info": f"{request.method} {request.path}"})
     return response

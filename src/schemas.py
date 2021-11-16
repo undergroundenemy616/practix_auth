@@ -29,7 +29,10 @@ class UserHistorySchema(Schema):
 
     @post_load
     def create_user_history(self, data, **kwargs):
-        return History(**data)
+        history = History(**data)
+        db.session.add(history)
+        db.session.commot()
+        return history
 
 
 class PermissionSchema(Schema):
