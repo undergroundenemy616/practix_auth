@@ -1,14 +1,18 @@
 from pprint import pprint
+
 import click
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                get_jwt_identity, jwt_required,
+                                verify_jwt_in_request)
+from flask_jwt_extended.exceptions import JWTExtendedException
 from marshmallow import ValidationError
 
-from utils import register_user
-
 from db.pg_db import db
-from models import User, History
-from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate, UserHistorySchema
+from models import History, User
+from schemas import (UserHistorySchema, UserLoginSchema, UserSchemaDetailed,
+                     UserSchemaUpdate)
+from utils import register_user
 
 accounts = Blueprint('accounts', __name__)
 
@@ -107,6 +111,10 @@ def after_request_func(response):
         return response
     login = request.get_json().get('login')
     if not login:
+        try:
+            verify_jwt_in_request()
+        except JWTExtendedException:
+            return response
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if user:

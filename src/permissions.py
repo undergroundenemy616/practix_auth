@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
 from db.pg_db import db
 from models import Permission, Role
-from schemas import RoleCreateSchema, PermissionSchema, RoleUpdateSchema, RoleSchema
+from schemas import (PermissionSchema, RoleCreateSchema, RoleSchema,
+                     RoleUpdateSchema)
 
 permissions = Blueprint('permissions', __name__)
 
@@ -15,8 +16,7 @@ def roles_list():
             role = RoleCreateSchema().load(request.get_json())
         except ValidationError as e:
             return jsonify(e.messages), 400
-        else:
-            return jsonify(RoleSchema().dump(role)), 200
+        return jsonify(RoleSchema().dump(role)), 200
     else:
         paginated_roles = Role.get_paginated_data(page=request.args.get('page'),
                                                   count=request.args.get('count'),
@@ -38,8 +38,7 @@ def role_detail(id):
             role = RoleUpdateSchema().load(data)
         except ValidationError as e:
             return jsonify(e.messages), 400
-        else:
-            return jsonify(RoleSchema().dump(role)), 200
+        return jsonify(RoleSchema().dump(role)), 200
     elif request.method == 'DELETE':
         db.session.delete(role)
         db.session.commit()
@@ -55,8 +54,7 @@ def permission_list():
             permission = PermissionSchema().load(request.get_json())
         except ValidationError as e:
             return jsonify(e.messages), 400
-        else:
-            return jsonify(PermissionSchema().dump(permission)), 201
+        return jsonify(PermissionSchema().dump(permission)), 201
     else:
         paginated_permissions = Permission.get_paginated_data(page=request.args.get('page'),
                                                               count=request.args.get('count'),

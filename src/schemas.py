@@ -1,7 +1,8 @@
-from marshmallow import fields, Schema, post_load
-from models import History, Role, Permission
-from db.pg_db import db
+from marshmallow import Schema, fields, post_load
+
 import validate_functions
+from db.pg_db import db
+from models import History, Permission, Role
 
 
 class UserSchemaDetailed(Schema):
@@ -31,7 +32,7 @@ class UserHistorySchema(Schema):
     def create_user_history(self, data, **kwargs):
         history = History(**data)
         db.session.add(history)
-        db.session.commot()
+        db.session.commit()
         return history
 
 
