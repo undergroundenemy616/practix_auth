@@ -47,7 +47,7 @@ def check_permission(required_permission: str):
     return check_admin_inner
 
 
-@permissions.route('check', methods=['GET'])
+@permissions.route('/check', methods=['GET'])
 @jwt_required()
 def permission_check():
     required_permission = request.args.get('required_permission')
