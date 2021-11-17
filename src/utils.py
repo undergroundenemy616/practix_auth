@@ -15,9 +15,9 @@ def register_user(login, password, superuser=False):
     if User.query.filter_by(login=login).first():
         return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}), 400
     if superuser:
-        role_id = Role.query.filter_by(name='admin').first()
+        role_id = Role.query.filter_by(name='Admin').first().id
     else:
-        role_id = Role.query.filter_by(name='user').first()
+        role_id = Role.query.filter_by(name='BaseUser').first().id
     user = User(login=login, role_id=role_id)
     user.set_password(password)
     db.session.add(user)
@@ -29,3 +29,20 @@ def register_user(login, password, superuser=False):
         'access_token': access_token,
         'refresh_token': refresh_token
     }), 201
+
+
+
+def admin_required():
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            verify_jwt_in_request()
+            claims = get_jwt()
+            if claims["is_administrator"]:
+                return fn(*args, **kwargs)
+            else:
+                return jsonify(msg="Admins only!"), 403
+
+        return decorator
+
+    return wrapper
