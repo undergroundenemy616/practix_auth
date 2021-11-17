@@ -20,14 +20,14 @@ jwt = JWTManager(accounts)
 # Callback function to check if a JWT exists in the redis blocklist
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
-    jti = jwt_payload["jti"]
+    jti = jwt_payload['jti']
     token_in_redis = redis_db.get(jti)
     return token_in_redis is not None
 
 
-@accounts.cli.command("createsuperuser")
-@click.argument("login")
-@click.argument("password")
+@accounts.cli.command('createsuperuser')
+@click.argument('login')
+@click.argument('password')
 def create_user(login, password):
     result = register_user(login, password, superuser=True)
     pprint(result[0])
@@ -73,7 +73,7 @@ def update():
             'error': 'Ошибка доступа',
         }), 403
 
-    if request.method == "GET":
+    if request.method == 'GET':
         result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
         return result
 
@@ -97,12 +97,12 @@ def update():
     }), 200
 
 
-@accounts.route("/refresh", methods=["POST"])
+@accounts.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
-    jti = get_jwt()["jti"]
-    redis_db(jti, "")
+    jti = get_jwt()['jti']
+    redis_db(jti, '')
     access_token = create_access_token(identity=identity)
 
     return jsonify({
@@ -115,8 +115,8 @@ def refresh():
 @jwt_required
 def logout():
     login = get_jwt_identity()
-    jti = get_jwt()["jti"]
-    redis_db(jti, "")
+    jti = get_jwt()['jti']
+    redis_db(jti, '')
 
     return jsonify({
         'message': f'Сеанс пользователя {login} успешно завершен'
