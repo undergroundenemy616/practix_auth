@@ -90,8 +90,10 @@ def update():
 @accounts.route('/logout', methods=['DELETE'])
 @jwt_required
 def logout():
+    login = get_jwt_identity()
     jti = get_jwt()["jti"]
     redis_db(jti, "")
+
     return jsonify({
         'message': f'Сеанс пользователя {login} успешно завершен'
     }), 200
