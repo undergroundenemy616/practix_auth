@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Admin",
+    "description": "Admin",
+    "permissions": [
+      "roles",
+      "role",
+      "permissions",
+      "permission"
+    ]
+  },
+  {
+    "name": "BaseUser",
+    "description": "User without subscription",
+    "permissions": []
+  },
+  {
+    "name": "SubscribeUser",
+    "description": "User with subscription",
+    "permissions": []
+  }
+]

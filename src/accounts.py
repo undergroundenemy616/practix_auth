@@ -1,23 +1,21 @@
 from pprint import pprint
 import click
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
-from flask_jwt_extended import get_jwt
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
+    JWTManager
 from marshmallow import ValidationError
 
+from db.redis_db import redis_db
 from utils import register_user
 
 from models import User
 from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate
 from db.pg_db import db
-from db.redis_db import redis_db
 
 accounts = Blueprint('accounts', __name__)
 jwt = JWTManager(accounts)
 
 
-# Callback function to check if a JWT exists in the redis blocklist
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
     jti = jwt_payload['jti']
@@ -25,9 +23,9 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return token_in_redis is not None
 
 
-@accounts.cli.command('createsuperuser')
-@click.argument('login')
-@click.argument('password')
+@accounts.cli.command("createsuperuser")
+@click.argument("login")
+@click.argument("password")
 def create_user(login, password):
     result = register_user(login, password, superuser=True)
     pprint(result[0])
@@ -73,7 +71,7 @@ def update():
             'error': 'Ошибка доступа',
         }), 403
 
-    if request.method == 'GET':
+    if request.method == "GET":
         result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
         return result
 
@@ -121,3 +119,4 @@ def logout():
     return jsonify({
         'message': f'Сеанс пользователя {login} успешно завершен'
     }), 200
+
