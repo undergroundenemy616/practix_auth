@@ -149,3 +149,4 @@ def after_request_func(response):
                                   "user_agent": str(request.user_agent),
                                   "info": f"{request.method} {request.path}"})
     return response
+
