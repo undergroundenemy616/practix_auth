@@ -11,3 +11,4 @@ def init_db(app: Flask):
     database_name = app.config['POSTGRES_DB']
     app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{username}:{password}@{host}/{database_name}'
     db.init_app(app)
+
