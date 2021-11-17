@@ -9,7 +9,6 @@ class BaseConfig:
     # Настройки Redis
     REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PORT = os.getenv('REDIS_PORT', 6379)
-
     # Настройки Postgres
     POSTGRES_DB = os.getenv('POSTGRES_DB', 'auth_database')
     POSTGRES_USER = os.getenv('POSTGRES_USER', 'postgres')
@@ -21,6 +20,7 @@ class BaseConfig:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)

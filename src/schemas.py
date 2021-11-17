@@ -9,10 +9,7 @@ class UserSchemaDetailed(Schema):
     login = fields.String()
     name = fields.String()
     email = fields.Email()
-
-
-class UserSchemaUpdate(UserSchemaDetailed):
-    password = fields.String(validate=validate_functions.validate_password)
+    password = fields.String(validate=validate_functions.validate_password, load_only=True)
 
 
 class UserLoginSchema(Schema):

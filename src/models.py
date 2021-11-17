@@ -39,7 +39,7 @@ class BaseModel(object):
 class Permission(db.Model, BaseModel):
     __tablename__ = 'permission'
 
-    name = db.Column(db.String, unique=True)
+    name = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
 
     def __str__(self):
         return f'<Permission {self.name}>'
@@ -48,7 +48,7 @@ class Permission(db.Model, BaseModel):
 class Role(db.Model, BaseModel):
     __tablename__ = 'role'
 
-    name = db.Column(db.String, unique=True)
+    name = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     description = db.Column(db.String)
     permissions = db.relationship('Permission', secondary=role_permission,
                                   backref=db.backref('roles', lazy='dynamic'))
@@ -65,7 +65,7 @@ class Role(db.Model, BaseModel):
 class User(db.Model, BaseModel):
     __tablename__ = 'user'
 
-    login = db.Column(db.String, unique=True, nullable=False)
+    login = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     name = db.Column(db.String)
     email = db.Column(db.String, unique=True)

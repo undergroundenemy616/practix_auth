@@ -1,11 +1,13 @@
-import redis
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from flask_redis import FlaskRedis
 
-from app import app
+redis_db = FlaskRedis()
 
-db = SQLAlchemy()
 
-host = app.config['REDIS_HOST']
-port = app.config['REDIS_PORT']
+def init_redis_db(app: Flask):
 
-redis_db = redis.Redis(host=host, port=port, db=0)
+    host = app.config['REDIS_HOST']
+    port = app.config['REDIS_PORT']
+    app.config['REDIS_URL'] = f"redis://{host}:{port}/0"
+
+    redis_db.init_app(app)

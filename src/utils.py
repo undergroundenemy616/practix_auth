@@ -29,3 +29,20 @@ def register_user(login, password, superuser=False):
         'access_token': access_token,
         'refresh_token': refresh_token
     }), 201
+
+
+
+def admin_required():
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            verify_jwt_in_request()
+            claims = get_jwt()
+            if claims["is_administrator"]:
+                return fn(*args, **kwargs)
+            else:
+                return jsonify(msg="Admins only!"), 403
+
+        return decorator
+
+    return wrapper

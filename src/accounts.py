@@ -1,26 +1,21 @@
 from pprint import pprint
 import click
+
+from flask import current_app
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
-    JWTManager
+    verify_jwt_in_request
+from flask_jwt_extended.exceptions import JWTExtendedException
 from marshmallow import ValidationError
 
 from db.redis_db import redis_db
 from utils import register_user
 
-from models import User
-from schemas import UserLoginSchema, UserSchemaDetailed, UserSchemaUpdate
+from models import User, History
+from schemas import UserLoginSchema, UserSchemaDetailed, UserHistorySchema
 from db.pg_db import db
 
 accounts = Blueprint('accounts', __name__)
-jwt = JWTManager(accounts)
-
-
-@jwt.token_in_blocklist_loader
-def check_if_token_is_revoked(jwt_header, jwt_payload):
-    jti = jwt_payload['jti']
-    token_in_redis = redis_db.get(jti)
-    return token_in_redis is not None
 
 
 @accounts.cli.command("createsuperuser")
@@ -76,7 +71,7 @@ def update():
         return result
 
     try:
-        new_user_info = UserSchemaUpdate().load(request.get_json(), partial=True)
+        new_user_info = UserSchemaDetailed().load(request.get_json(), partial=True)
     except ValidationError as e:
         return jsonify(e.messages), 400
 
@@ -95,12 +90,28 @@ def update():
     }), 200
 
 
+@accounts.route('/user-history', methods=['GET'])
+@jwt_required()
+def get_user_history():
+    login = get_jwt_identity()
+    user = User.query.filter_by(login=login).first()
+    if not user:
+        return jsonify({
+            'error': 'Ошибка доступа',
+        }), 403
+    paginated_user_history = History.get_paginated_data(page=request.args.get('page'),
+                                                        count=request.args.get('count'),
+                                                        schema=UserHistorySchema,
+                                                        filtered_kwargs={'user_id': user.id})
+    return jsonify(paginated_user_history), 200
+
+
 @accounts.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
     jti = get_jwt()['jti']
-    redis_db(jti, '')
+    redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
     access_token = create_access_token(identity=identity)
 
     return jsonify({
@@ -110,13 +121,32 @@ def refresh():
 
 
 @accounts.route('/logout', methods=['DELETE'])
-@jwt_required
+@jwt_required()
 def logout():
     login = get_jwt_identity()
     jti = get_jwt()['jti']
-    redis_db(jti, '')
-
+    redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
     return jsonify({
         'message': f'Сеанс пользователя {login} успешно завершен'
     }), 200
+
+
+@accounts.after_request
+def after_request_func(response):
+    if request.path.endswith('register'):
+        return response
+    data = request.get_json() or {}
+    login = data.get('login', None)
+    if not login:
+        try:
+            verify_jwt_in_request()
+        except JWTExtendedException:
+            return response
+        login = get_jwt_identity()
+    user = User.query.filter_by(login=login).first()
+    if user:
+        UserHistorySchema().load({"user_id": str(user.id),
+                                  "user_agent": str(request.user_agent),
+                                  "info": f"{request.method} {request.path}"})
+    return response
 
