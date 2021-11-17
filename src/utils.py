@@ -1,5 +1,7 @@
+import functools
+
 from flask import jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
 from marshmallow import ValidationError
 
 from db.pg_db import db
@@ -31,18 +33,13 @@ def register_user(login, password, superuser=False):
     }), 201
 
 
-
-def admin_required():
-    def wrapper(fn):
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            verify_jwt_in_request()
-            claims = get_jwt()
-            if claims["is_administrator"]:
-                return fn(*args, **kwargs)
-            else:
-                return jsonify(msg="Admins only!"), 403
-
-        return decorator
-
-    return wrapper
+def check_permission(required_permission: str):
+    def check_admin_inner(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            login = get_jwt_identity()
+            if not User.check_permission(login=login, required_permission=required_permission):
+                return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
+            return f(*args, **kwargs)
+        return wrapper
+    return check_admin_inner

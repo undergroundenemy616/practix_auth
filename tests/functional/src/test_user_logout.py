@@ -16,8 +16,17 @@ async def get_token(db_setup, make_post_request):
     return response.body['access_token']
 
 
-async def test_retrieve_user(get_token, make_delete_request):
-    response = await make_delete_request(f"/api/v1/accounts/logout", headers={"Authorization": f"Bearer {get_token}"})
+async def test_retrieve_user(get_token, make_delete_request, make_get_request):
+    token = get_token
+    response = await make_delete_request(f"/api/v1/accounts/logout", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status == HTTPStatus.OK
     assert response.body == {'message': 'Сеанс пользователя Test успешно завершен'}
+
+    response_after_revoking = await make_get_request(f"/api/v1/accounts/update",
+                                                     headers={"Authorization": f"Bearer {token}"})
+
+    assert response_after_revoking.status == HTTPStatus.UNAUTHORIZED
+    assert response_after_revoking.body == {
+        "msg": "Token has been revoked"
+    }

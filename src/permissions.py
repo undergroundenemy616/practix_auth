@@ -10,6 +10,8 @@ from schemas import (PermissionSchema, RoleCreateSchema, RoleSchema,
                      RoleUpdateSchema, RoleAssignSchema)
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from utils import check_permission
+
 permissions = Blueprint('permissions', __name__)
 
 
@@ -33,18 +35,6 @@ def add_base_data():
             role_obj.permissions.extend(role_permissions)
             db.session.add(role_obj)
         db.session.commit()
-
-
-def check_permission(required_permission: str):
-    def check_admin_inner(f):
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            login = get_jwt_identity()
-            if not User.check_permission(login=login, required_permission=required_permission):
-                return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
-            return f(*args, **kwargs)
-        return wrapper
-    return check_admin_inner
 
 
 @permissions.route('/check', methods=['GET'])
