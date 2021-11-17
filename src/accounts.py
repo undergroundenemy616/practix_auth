@@ -3,6 +3,7 @@ import click
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 from flask_jwt_extended import get_jwt
+from flask_jwt_extended import JWTManager
 from marshmallow import ValidationError
 
 from utils import register_user
@@ -13,6 +14,15 @@ from db.pg_db import db
 from db.redis_db import redis_db
 
 accounts = Blueprint('accounts', __name__)
+jwt = JWTManager(accounts)
+
+
+# Callback function to check if a JWT exists in the redis blocklist
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token_in_redis = redis_db.get(jti)
+    return token_in_redis is not None
 
 
 @accounts.cli.command("createsuperuser")
@@ -85,14 +95,6 @@ def update():
     return jsonify({
         'message': f'Пользователь {login} успешно обновлен',
     }), 200
-
-
-# Callback function to check if a JWT exists in the redis blocklist
-@jwt.token_in_blocklist_loader
-def check_if_token_is_revoked(jwt_header, jwt_payload):
-    jti = jwt_payload["jti"]
-    token_in_redis = redis_db.get(jti)
-    return token_in_redis is not None
 
 
 @accounts.route("/refresh", methods=["POST"])
