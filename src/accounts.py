@@ -87,6 +87,28 @@ def update():
     }), 200
 
 
+# Callback function to check if a JWT exists in the redis blocklist
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token_in_redis = redis_db.get(jti)
+    return token_in_redis is not None
+
+
+@accounts.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    jti = get_jwt()["jti"]
+    redis_db(jti, "")
+    access_token = create_access_token(identity=identity)
+
+    return jsonify({
+        'access_token': access_token,
+        'message': 'Token успешно обновлен'
+    }), 200
+
+
 @accounts.route('/logout', methods=['DELETE'])
 @jwt_required
 def logout():
