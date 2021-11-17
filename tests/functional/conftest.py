@@ -105,3 +105,18 @@ def make_post_request(session):
             )
 
     return inner
+
+
+@pytest.fixture
+def make_delete_request(session):
+    async def inner(method: str, headers: dict = None, json_data: dict = None, params: dict = None) -> HTTPResponse:
+        params = params or {}
+        url = urljoin(SERVICE_URL, method)
+        async with session.delete(url, headers=headers, json=json_data, params=params) as response:
+            return HTTPResponse(
+                body=await response.json(content_type=None),
+                headers=response.headers,
+                status=response.status,
+            )
+
+    return inner
