@@ -19,7 +19,6 @@ from flasgger import Schema, fields
 accounts = Blueprint('accounts', __name__)
 
 
-
 @accounts.cli.command("createsuperuser")
 @click.argument("login")
 @click.argument("password")
@@ -106,12 +105,15 @@ def sign_in():
         refresh_token = create_refresh_token(identity=login)
 
         return jsonify({
+            'status': 'success',
+            'message': f'Пользователь {login} авторизован',
             'access_token': access_token,
             'refresh_token': refresh_token
         }), 200
 
     return jsonify({
-        'error': 'Неверная пара логин-пароль',
+        'status': 'error',
+        'message': 'Неверная пара логин-пароль',
     }), 403
 
 
@@ -153,21 +155,32 @@ def update():
 
     if not user:
         return jsonify({
-            'error': 'Ошибка доступа',
+            'status': 'error',
+            'message': 'Ошибка доступа',
         }), 403
 
     if request.method == "GET":
         result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
-        return result
+        return jsonify({
+            'status': 'success',
+            'message': f'Аккаунт {login}',
+            'data': result
+        }), 200
 
     try:
         new_user_info = UserSchemaDetailed().load(request.get_json(), partial=True)
     except ValidationError as e:
-        return jsonify(e.messages), 400
+        return jsonify({
+                'status': 'error',
+                'message': e.messages,
+            }), 400
 
     if new_login := new_user_info.get('login', None):
         if User.query.filter(User.login == new_login, User.id != user.id).first():
-            return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Пользователь с таким login уже зарегистрирован',
+            }), 400
 
     if new_password := new_user_info.pop('password', None):
         user.set_password(new_password)
@@ -176,6 +189,7 @@ def update():
     db.session.commit()
 
     return jsonify({
+        'status': 'success',
         'message': f'Пользователь {login} успешно обновлен',
     }), 200
 
@@ -202,13 +216,18 @@ def get_user_history():
     user = User.query.filter_by(login=login).first()
     if not user:
         return jsonify({
-            'error': 'Ошибка доступа',
+            'status': 'error',
+            'message': 'Ошибка доступа',
         }), 403
     paginated_user_history = History.get_paginated_data(page=request.args.get('page'),
                                                         count=request.args.get('count'),
                                                         schema=UserHistorySchema,
                                                         filtered_kwargs={'user_id': user.id})
-    return jsonify(paginated_user_history), 200
+    return jsonify({
+            'status': 'success',
+            'message': f'История действий {login}',
+            'data': paginated_user_history
+        }), 200
 
 
 @accounts.route('/refresh', methods=['POST'])
@@ -244,8 +263,9 @@ def refresh():
     access_token = create_access_token(identity=identity)
 
     return jsonify({
+        'status': 'success',
+        'message': 'Token успешно обновлен',
         'access_token': access_token,
-        'message': 'Token успешно обновлен'
     }), 200
 
 
@@ -279,6 +299,7 @@ def logout():
     jti = get_jwt()['jti']
     redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
     return jsonify({
+        'status': 'success',
         'message': f'Сеанс пользователя {login} успешно завершен'
     }), 200
 
@@ -301,4 +322,3 @@ def after_request_func(response):
                                   "user_agent": str(request.user_agent),
                                   "info": f"{request.method} {request.path}"})
     return response
-

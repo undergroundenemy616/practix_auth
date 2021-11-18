@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 
 import pytest
@@ -20,7 +21,7 @@ async def test_retrieve_user(get_token, make_get_request):
     response = await make_get_request(f"/api/v1/accounts/update", headers={"Authorization": f"Bearer {get_token}"})
 
     assert response.status == HTTPStatus.OK
-    assert response.body == {"email": None, "login": "Test", "name": None}
+    assert json.loads(response.body['data']) == {"email": None, "login": "Test", "name": None}
 
 
 async def test_update_user_login(get_token, make_post_request, make_get_request):
@@ -37,7 +38,7 @@ async def test_update_user_login(get_token, make_post_request, make_get_request)
     response = await make_get_request(f"/api/v1/accounts/update", headers={"Authorization": f"Bearer {new_token}"})
 
     assert response.status == HTTPStatus.OK
-    assert response.body == {"email": None, "login": "Test2", "name": None}
+    assert json.loads(response.body['data']) == {"email": None, "login": "Test2", "name": None}
 
 
 async def test_not_update_user_repeat_login(get_token, make_post_request, make_get_request):
@@ -46,7 +47,8 @@ async def test_not_update_user_repeat_login(get_token, make_post_request, make_g
                                        json_data={"login": new_login},
                                        headers={"Authorization": f"Bearer {get_token}"})
     assert response.status == HTTPStatus.BAD_REQUEST
-    assert response.body["error"] == f"Пользователь с таким login уже зарегистрирован"
+    assert response.body["message"] == "Пользователь с таким login уже зарегистрирован"
+    assert response.body["status"] == "error"
 
 
 async def test_update_user_password(get_token, make_post_request, make_get_request):
@@ -64,7 +66,7 @@ async def test_update_user_password(get_token, make_post_request, make_get_reque
     response = await make_get_request(f"/api/v1/accounts/update", headers={"Authorization": f"Bearer {new_token}"})
 
     assert response.status == HTTPStatus.OK
-    assert response.body == {"email": None, "login": "Test", "name": None}
+    assert json.loads(response.body["data"]) == {"email": None, "login": "Test", "name": None}
 
 
 async def test_not_update_user_incorrect_password(get_token, make_post_request, make_get_request):
@@ -73,7 +75,7 @@ async def test_not_update_user_incorrect_password(get_token, make_post_request, 
                                        json_data={"password": new_password},
                                        headers={"Authorization": f"Bearer {get_token}"})
     assert response.status == HTTPStatus.BAD_REQUEST
-    assert response.body["password"] == [
+    assert response.body["message"]["password"] == [
         "Пароль должен иметь буквы в обоих регистрах, цифры и быть длиной не менее 8 символов."
     ]
 
@@ -89,7 +91,7 @@ async def test_update_user_email(get_token, make_post_request, make_get_request)
     response = await make_get_request(f"/api/v1/accounts/update", headers={"Authorization": f"Bearer {get_token}"})
 
     assert response.status == HTTPStatus.OK
-    assert response.body == {"email": new_email, "login": "Test", "name": None}
+    assert json.loads(response.body["data"]) == {"email": new_email, "login": "Test", "name": None}
 
 
 async def test_not_update_user_wrong_email(get_token, make_post_request, make_get_request):
@@ -98,4 +100,4 @@ async def test_not_update_user_wrong_email(get_token, make_post_request, make_ge
                                        json_data={"email": new_email},
                                        headers={"Authorization": f"Bearer {get_token}"})
     assert response.status == HTTPStatus.BAD_REQUEST
-    assert response.body["email"] == ['Not a valid email address.']
+    assert response.body["message"]["email"] == ['Not a valid email address.']

@@ -11,9 +11,10 @@ async def test_register(make_post_request, db_setup):
     response = await make_post_request(f"/api/v1/accounts/register", json_data={"login": login, "password": password})
 
     assert response.status == HTTPStatus.CREATED
-    assert response.body['message'] == "Пользователь Test успешно зарегистрирован"
-    assert response.body['access_token']
-    assert response.body['refresh_token']
+    assert response.body["message"] == "Пользователь Test успешно зарегистрирован"
+    assert response.body["status"] == "success"
+    assert response.body["access_token"]
+    assert response.body["refresh_token"]
 
 
 async def test_not_register_existing_login(make_post_request, db_setup):
@@ -22,7 +23,8 @@ async def test_not_register_existing_login(make_post_request, db_setup):
     response = await make_post_request(f"/api/v1/accounts/register", json_data={"login": login, "password": password})
 
     assert response.status == HTTPStatus.BAD_REQUEST
-    assert response.body['error'] == "Пользователь с таким login уже зарегистрирован"
+    assert response.body["message"] == "Пользователь с таким login уже зарегистрирован"
+    assert response.body["status"] == "error"
 
 
 async def test_not_register_wrong_password(make_post_request, db_setup):
@@ -31,7 +33,7 @@ async def test_not_register_wrong_password(make_post_request, db_setup):
     response = await make_post_request(f"/api/v1/accounts/register", json_data={"login": login, "password": password})
 
     assert response.status == HTTPStatus.BAD_REQUEST
-    assert response.body['password'] == [
+    assert response.body["message"]["password"] == [
         "Пароль должен иметь буквы в обоих регистрах, цифры и быть длиной не менее 8 символов."
     ]
 
@@ -43,8 +45,8 @@ async def test_register_login(make_post_request, db_setup):
     response = await make_post_request(f"/api/v1/accounts/login", json_data={"login": login, "password": password})
 
     assert response.status == HTTPStatus.OK
-    assert response.body['access_token']
-    assert response.body['refresh_token']
+    assert response.body["access_token"]
+    assert response.body["refresh_token"]
 
 
 async def test_wrong_password_not_login(make_post_request, db_setup):
@@ -53,4 +55,5 @@ async def test_wrong_password_not_login(make_post_request, db_setup):
     response = await make_post_request(f"/api/v1/accounts/login", json_data={"login": login, "password": password})
 
     assert response.status == HTTPStatus.FORBIDDEN
-    assert response.body['error'] == "Неверная пара логин-пароль"
+    assert response.body["message"] == "Неверная пара логин-пароль"
+    assert response.body["status"] == "error"

@@ -11,11 +11,14 @@ from schemas import UserLoginSchema
 
 def register_user(login, password, superuser=False):
     try:
-        UserLoginSchema().load({"login": login, "password": password})
+        UserLoginSchema().load({'login': login, 'password': password})
     except ValidationError as e:
-        return jsonify(e.messages), 400
+        return jsonify({'status': 'error',
+                        'message': e.messages}), 400
     if User.query.filter_by(login=login).first():
-        return jsonify({'error': 'Пользователь с таким login уже зарегистрирован'}), 400
+        return jsonify({
+            'status': 'error',
+            'message': 'Пользователь с таким login уже зарегистрирован'}), 400
     if superuser:
         role_id = Role.query.filter_by(name='Admin').first().id
     else:
@@ -27,6 +30,7 @@ def register_user(login, password, superuser=False):
     access_token = create_access_token(identity=login)
     refresh_token = create_refresh_token(identity=login)
     return jsonify({
+        'status': 'success',
         'message': f'Пользователь {login} успешно зарегистрирован',
         'access_token': access_token,
         'refresh_token': refresh_token
@@ -39,7 +43,9 @@ def check_permission(required_permission: str):
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
             if not User.check_permission(login=login, required_permission=required_permission):
-                return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
+                return jsonify({'type': 'error', 'message': 'Доступ запрещен'}), 403
             return f(*args, **kwargs)
+
         return wrapper
+
     return check_admin_inner
