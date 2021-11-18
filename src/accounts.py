@@ -14,8 +14,10 @@ from utils import register_user
 from models import User, History
 from schemas import UserLoginSchema, UserSchemaDetailed, UserHistorySchema
 from db.pg_db import db
+from flasgger import Schema, fields
 
 accounts = Blueprint('accounts', __name__)
+
 
 
 @accounts.cli.command("createsuperuser")
@@ -28,11 +30,69 @@ def create_user(login, password):
 
 @accounts.route('/register', methods=['POST'])
 def register():
+    """register
+    ---
+    post:
+      description: register_user
+      summary: Register user
+      parameters:
+      - name: login
+        in: path
+        description: login
+        schema:
+          type: string
+      - name: password
+        in: path
+        description: password
+        schema:
+          type: string
+      - name: superuser
+        in: path
+        description: superuser
+        schema:
+          type: boolean
+    responses:
+      '201':
+          description: Ok
+      '403':
+          description: Conflict
+    tags:
+    - account
+    """
     return register_user(**request.get_json())
 
 
 @accounts.route('/login', methods=['POST'])
 def sign_in():
+    """login
+        ---
+        post:
+          description: register_user
+          summary: Register user
+          parameters:
+          - name: login
+            in: path
+            description: login
+            schema:
+              type: string
+          - name: password
+            in: path
+            description: password
+            schema:
+              type: string
+
+          requestBody:
+            content:
+              application/json:
+                schema: UserIn
+        responses:
+          '201':
+            description: Ok
+          '403':
+            description: Incorrect password or login name
+        tags:
+          - account
+        """
     try:
         user_try = UserLoginSchema().load(request.get_json())
     except ValidationError as e:
@@ -58,6 +118,36 @@ def sign_in():
 @accounts.route('/update', methods=['GET', 'POST'])
 @jwt_required()
 def update():
+    """update password
+        ---
+        get:
+          description: update_password
+          summary: Update password
+        post:
+          description: update_password
+          summary: Update Password
+          parameters:
+          - name: login
+            in: path
+            description: login
+            schema:
+              type: string
+          - name: password
+            in: path
+            description: password
+            schema:
+              type: string
+
+        responses:
+          200:
+            description: Ok
+          403:
+            description: Forbidden error
+          400:
+            description: User already exist
+        tags:
+          - account
+        """
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
 
@@ -93,6 +183,21 @@ def update():
 @accounts.route('/user-history', methods=['GET'])
 @jwt_required()
 def get_user_history():
+    """get_login_history
+       ---
+       get:
+         description: get_user_history
+         summary: Get user history
+         security:
+           - jwt_access: []
+       responses:
+         200:
+           description: Return login history
+         403:
+           description: Forbidden error
+       tags:
+         - account
+       """
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if not user:
@@ -109,6 +214,30 @@ def get_user_history():
 @accounts.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
+    """refresh password
+       ---
+       post:
+         description: refresh_token
+         summary: Refresh toke
+         security:
+           - jwt_access: []
+       responses:
+         '200':
+            description: Return refresh token
+            schema:
+              $ref: "#/definitions/TokenMessage"
+       tags:
+         - account
+       definitions:
+         TokenMessage:
+           type: "object"
+           properties:
+             message:
+              type: "string"
+             access_token:
+               type: "string"
+
+       """
     identity = get_jwt_identity()
     jti = get_jwt()['jti']
     redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
@@ -123,6 +252,29 @@ def refresh():
 @accounts.route('/logout', methods=['DELETE'])
 @jwt_required()
 def logout():
+    """User logout point
+       ---
+       delete:
+         description: user_logout
+         summary: User logaut
+         security:
+           - jwt_access: []
+       responses:
+         '200':
+           description: Logout complete
+           schema:
+             $ref: "#/definitions/ApiResponse"
+       tags:
+         - account
+       produces:
+         - "application/json"
+       definitions:
+         ApiResponse:
+           type: "object"
+           properties:
+             message:
+              type: "string"
+       """
     login = get_jwt_identity()
     jti = get_jwt()['jti']
     redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
