@@ -31,3 +31,4 @@ zope.interface==5.4.0
 marshmallow==3.14.0
 psycopg2-binary==2.9.1
 flask-redis==0.4.0
+flasgger==0.9.5

@@ -19,6 +19,7 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
     app.register_blueprint(accounts, url_prefix='/api/v1/accounts')
     jwt = JWTManager(app)
 
+
     @jwt.token_in_blocklist_loader
     def check_if_token_is_revoked(jwt_header, jwt_payload):
         jti = jwt_payload['jti']

@@ -40,6 +40,23 @@ def add_base_data():
 @permissions.route('/check', methods=['GET'])
 @jwt_required()
 def permission_check():
+    """check
+        ---
+        get:
+          description: check permission
+          summary: check permission
+
+        responses:
+          200:
+            description: Access granted
+          400:
+            description: required_permission disabled
+          403:
+            description: Access denied
+        tags:
+          - permission
+        """
+
     required_permission = request.args.get('required_permission')
     if not required_permission:
         return jsonify({"type": "error", "message": "required_permission отсутствует в параметрах"}), 400
@@ -53,6 +70,29 @@ def permission_check():
 @jwt_required()
 @check_permission(required_permission='role')
 def role_assign(id):
+    """role assign
+         ---
+         put:
+           description: check permission
+           summary: check permission
+           parameters:
+           - name: id
+             in: path
+             description: id
+             schema:
+              type: string
+         responses:
+           201:
+            description: Roles updated
+           404:
+            description: Role not found
+           400:
+            description: Permission disabled
+         tags:
+           - role
+           - permission
+         """
+
     if not Role.query.filter_by(id=id).first():
         return jsonify({
             'error': f'объект Role с id={id} не найден',
@@ -71,6 +111,25 @@ def role_assign(id):
 @jwt_required()
 @check_permission(required_permission='roles')
 def roles_list():
+    """roles
+         ---
+         get:
+           description: get roles
+           summary: get roles
+         post:
+           description: get roles
+           summary: get roles
+
+         responses:
+           200:
+             description: Ok
+           400:
+             description: Permission disabled
+         tags:
+           - role
+           - permission
+         """
+
     if request.method == 'POST':
         try:
             role = RoleCreateSchema().load(request.get_json())
@@ -88,6 +147,51 @@ def roles_list():
 @jwt_required()
 @check_permission(required_permission='role')
 def role_detail(id):
+    """role
+         ---
+         get:
+           description: get role
+           summary: get role
+           parameters:
+             - name: id
+               in: path
+               description: id
+               schema:
+                type: string
+
+         delete:
+           description: delete role
+           summary: delete role
+           parameters:
+             - name: id
+               in: path
+               description: id
+               schema:
+                type: string
+
+         put:
+           description: put role
+           summary: put role
+           parameters:
+             - name: id
+               in: path
+               description: id
+               schema:
+                type: string
+
+
+         responses:
+           200:
+            description: Ok
+           204:
+            description: Already deleted
+           404:
+            description: Role not found
+         tags:
+           - role
+           - permission
+         """
+
     role = Role.query.filter_by(id=id).first()
     if not role:
         return jsonify({
@@ -113,6 +217,26 @@ def role_detail(id):
 @jwt_required()
 @check_permission(required_permission='permissions')
 def permission_list():
+    """permissions list
+          ---
+          get:
+            description: get permissions
+            summary: get permissions
+          post:
+            description: post permissions
+            summary: post permissions
+
+          responses:
+            200:
+              description: Ok
+            201:
+             description: Ok
+            400:
+             description: Permission disabled
+          tags:
+            - permission
+          """
+
     if request.method == 'POST':
         try:
             permission = PermissionSchema().load(request.get_json())
@@ -130,6 +254,28 @@ def permission_list():
 @jwt_required()
 @check_permission(required_permission='permission')
 def permission_delete(id):
+    """permission delete
+          ---
+          delete:
+            description: get roles
+            summary: get roles
+            parameters:
+             - name: id
+               in: path
+               description: id
+               schema:
+                type: string
+
+
+          responses:
+            204:
+              description: Permission deleted
+            404:
+              description: Permission not fount
+          tags:
+            - permission
+          """
+
     permission = Permission.query.filter_by(id=id).first()
     if not permission:
         return jsonify({
