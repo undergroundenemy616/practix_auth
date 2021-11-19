@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 
 from db.pg_db import init_db, db
 from db.redis_db import init_redis_db, redis_db
-from permissions import permissions
+from rbac import permissions
 from accounts import accounts
 
 

@@ -104,7 +104,10 @@ def role_assign(id):
         try:
             RoleAssignSchema().load(data)
         except ValidationError as e:
-            return jsonify(e.messages), 400
+            return jsonify({
+                'status': 'error',
+                'message': e.messages,
+            }), 400
         return jsonify({"status": "success",
                         "message": "Роли обновлены"}), 200
 
@@ -136,13 +139,24 @@ def roles_list():
         try:
             role = RoleCreateSchema().load(request.get_json())
         except ValidationError as e:
-            return jsonify(e.messages), 400
-        return jsonify(RoleSchema().dump(role)), 200
+            return jsonify({
+                'status': 'error',
+                'message': e.messages,
+            }), 400
+        return jsonify({
+                'status': 'success',
+                'message': 'Роль успешно создана',
+                'data': RoleSchema().dump(role)
+            }), 201
     else:
         paginated_roles = Role.get_paginated_data(page=request.args.get('page'),
                                                   count=request.args.get('count'),
                                                   schema=RoleSchema)
-        return jsonify(paginated_roles), 200
+        return jsonify({
+                'status': 'success',
+                'message': 'Все роли',
+                'data': paginated_roles
+            }), 200
 
 
 @permissions.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
@@ -206,15 +220,26 @@ def role_detail(id):
         try:
             role = RoleUpdateSchema().load(data)
         except ValidationError as e:
-            return jsonify(e.messages), 400
-        return jsonify(RoleSchema().dump(role)), 200
+            return jsonify({
+                'status': 'error',
+                'message': e.messages,
+            }), 400
+        return jsonify({
+                'status': 'success',
+                'message': 'Роль успешно обновлена',
+                'data': RoleSchema().dump(role)
+            }), 200
     elif request.method == 'DELETE':
         db.session.delete(role)
         db.session.commit()
         return jsonify({"status": "success",
                         "message": f"объект Role с id={id} удален"}), 204
     else:
-        return jsonify(RoleSchema().dump(role)), 200
+        return jsonify({
+            'status': 'success',
+            'message': f"Объект Role с id={id}",
+            'data': RoleSchema().dump(role)
+        }), 200
 
 
 @permissions.route('permissions', methods=['POST', 'GET'])
@@ -245,13 +270,24 @@ def permission_list():
         try:
             permission = PermissionSchema().load(request.get_json())
         except ValidationError as e:
-            return jsonify(e.messages), 400
-        return jsonify(PermissionSchema().dump(permission)), 201
+            return jsonify({
+                'status': 'error',
+                'message': e.messages,
+            }), 400
+        return jsonify({
+            'status': 'success',
+            'message': f"Разрешение успешно создано",
+            'data': PermissionSchema().dump(permission)
+        }), 201
     else:
         paginated_permissions = Permission.get_paginated_data(page=request.args.get('page'),
                                                               count=request.args.get('count'),
                                                               schema=PermissionSchema)
-        return jsonify(paginated_permissions), 200
+        return jsonify({
+            'status': 'success',
+            'message': 'Все разрешения',
+            'data': paginated_permissions
+        }), 200
 
 
 @permissions.route('permissions/<uuid:id>', methods=['DELETE'])
