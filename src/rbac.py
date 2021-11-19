@@ -12,10 +12,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from utils import check_permission
 
-permissions = Blueprint('rbac', __name__)
+rbac = Blueprint('rbac', __name__)
 
 
-@permissions.cli.command("add_base_data")
+@rbac.cli.command("add_base_data")
 def add_base_data():
     with open('db/fixtures/roles.json') as json_roles, open('db/fixtures/permissions.json') as json_permissions:
         roles_data = json.load(json_roles)
@@ -37,7 +37,7 @@ def add_base_data():
         db.session.commit()
 
 
-@permissions.route('/check', methods=['GET'])
+@rbac.route('/check', methods=['GET'])
 @jwt_required()
 def permission_check():
     """check
@@ -66,7 +66,7 @@ def permission_check():
     return jsonify({"status": "success", "message": "Доступ разрешен"}), 200
 
 
-@permissions.route('/roles/<uuid:id>/assign', methods=['PUT'])
+@rbac.route('/roles/<uuid:id>/assign', methods=['PUT'])
 @jwt_required()
 @check_permission(required_permission='role')
 def role_assign(id):
@@ -112,7 +112,7 @@ def role_assign(id):
                         "message": "Роли обновлены"}), 200
 
 
-@permissions.route('/roles', methods=['GET', 'POST'])
+@rbac.route('/roles', methods=['GET', 'POST'])
 @jwt_required()
 @check_permission(required_permission='roles')
 def roles_list():
@@ -159,7 +159,7 @@ def roles_list():
             }), 200
 
 
-@permissions.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
+@rbac.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
 @jwt_required()
 @check_permission(required_permission='role')
 def role_detail(id):
@@ -242,7 +242,7 @@ def role_detail(id):
         }), 200
 
 
-@permissions.route('permissions', methods=['POST', 'GET'])
+@rbac.route('permissions', methods=['POST', 'GET'])
 @jwt_required()
 @check_permission(required_permission='permissions')
 def permission_list():
@@ -290,7 +290,7 @@ def permission_list():
         }), 200
 
 
-@permissions.route('permissions/<uuid:id>', methods=['DELETE'])
+@rbac.route('permissions/<uuid:id>', methods=['DELETE'])
 @jwt_required()
 @check_permission(required_permission='permission')
 def permission_delete(id):
