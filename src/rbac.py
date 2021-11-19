@@ -49,12 +49,26 @@ def permission_check():
         responses:
           200:
             description: Access granted
+            schema:
+             $ref: "#/definitions/ApiResponse"
           400:
             description: required_permission disabled
+            schema:
+             $ref: "#/definitions/ApiResponse"
           403:
             description: Access denied
+            schema:
+             $ref: "#/definitions/ApiResponse"
         tags:
           - permission
+        definitions:
+          ApiResponse:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              status:
+                type: "string"
         """
 
     required_permission = request.args.get('required_permission')
@@ -84,13 +98,27 @@ def role_assign(id):
          responses:
            201:
             description: Roles updated
+            schema:
+             $ref: "#/definitions/ApiResponse"
            404:
             description: Role not found
+            schema:
+             $ref: "#/definitions/ApiResponse"
            400:
             description: Permission disabled
+            schema:
+             $ref: "#/definitions/ApiResponse"
          tags:
            - role
            - permission
+         definitions:
+           ApiResponse:
+             type: "object"
+             properties:
+               message:
+                 type: "string"
+               status:
+                 type: "string"
          """
 
     if not Role.query.filter_by(id=id).first():
@@ -128,11 +156,43 @@ def roles_list():
          responses:
            200:
              description: Ok
+             schema:
+               $ref: "#/definitions/DefinitionResponse"
+           201:
+             description: Created
+             schema:
+               $ref: "#/definitions/DefinitionResponse"
            400:
              description: Permission disabled
+             schema:
+               $ref: "#/definitions/ApiResponse"
          tags:
            - role
            - permission
+         definitions:
+           ApiResponse:
+             type: "object"
+             properties:
+               message:
+                 type: "string"
+               status:
+                 type: "string"
+           DefinitionResponse:
+             type: "object"
+             properties:
+               status:
+                 type: "string"
+               message:
+                 type: "string"
+               data:
+                 type: "object"
+                 properties:
+                  id:
+                    type: "string"
+                  name:
+                    type: "string"
+
+
          """
 
     if request.method == 'POST':
@@ -199,13 +259,29 @@ def role_detail(id):
          responses:
            200:
             description: Ok
+            schema:
+               $ref: "#/definitions/ApiResponse"
            204:
             description: Already deleted
+            schema:
+               $ref: "#/definitions/ApiResponse"
+
            404:
             description: Role not found
+            schema:
+               $ref: "#/definitions/ApiResponse"
          tags:
            - role
            - permission
+         definitions:
+           ApiResponse:
+             type: "object"
+             properties:
+               message:
+                 type: "string"
+               status:
+                 type: "string"
+
          """
 
     role = Role.query.filter_by(id=id).first()
@@ -258,12 +334,41 @@ def permission_list():
           responses:
             200:
               description: Ok
+              schema:
+                $ref: "#/definitions/DefinitionResponse"
             201:
              description: Ok
+             schema:
+                $ref: "#/definitions/DefinitionResponse"
             400:
-             description: Permission disabled
+             description: Permission disable
+             schema:
+                $ref: "#/definitions/ApiResponse"
           tags:
             - permission
+          definitions:
+            ApiResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                status:
+                  type: "string"
+            DefinitionResponse:
+              type: "object"
+              properties:
+                status:
+                  type: "string"
+                message:
+                  type: "string"
+                data:
+                  type: "object"
+                  properties:
+                    id:
+                      type: "string"
+                    name:
+                      type: "string"
+
           """
 
     if request.method == 'POST':
@@ -310,10 +415,22 @@ def permission_delete(id):
           responses:
             204:
               description: Permission deleted
+              schema:
+                $ref: "#/definitions/ApiResponse"
             404:
-              description: Permission not fount
+              description: Permission not found
+              schema:
+                $ref: "#/definitions/ApiResponse"
           tags:
             - permission
+          definitions:
+            ApiResponse:
+              type: "object"
+              properties:
+                message:
+                  type: "string"
+                status:
+                  type: "string"
           """
 
     permission = Permission.query.filter_by(id=id).first()

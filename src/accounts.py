@@ -87,10 +87,35 @@ def sign_in():
         responses:
           '201':
             description: Ok
+            schema:
+              $ref: "#/definitions/TokensMsg"
           '403':
             description: Incorrect password or login name
+            schema:
+             $ref: "#/definitions/ApiResponse"
         tags:
           - account
+        definitions:
+          ApiResponse:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              status:
+                type: "string"
+          TokensMsg:
+           type: "object"
+           properties:
+             message:
+               type: "string"
+             status:
+               type: "string"
+             access_token:
+               type: "string"
+             refresh_token:
+               type: "string"
+
+
         """
     try:
         user_try = UserLoginSchema().load(request.get_json())
@@ -143,12 +168,27 @@ def update():
         responses:
           200:
             description: Ok
+            schema:
+             $ref: "#/definitions/ApiResponse"
           403:
             description: Forbidden error
+            schema:
+             $ref: "#/definitions/ApiResponse"
           400:
             description: User already exist
+            schema:
+             $ref: "#/definitions/ApiResponse"
         tags:
           - account
+        definitions:
+          ApiResponse:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              status:
+                type: "string"
+
         """
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
@@ -197,7 +237,7 @@ def update():
 @accounts.route('/user-history', methods=['GET'])
 @jwt_required()
 def get_user_history():
-    """get_login_history
+    """get_user_history
        ---
        get:
          description: get_user_history
@@ -207,10 +247,42 @@ def get_user_history():
        responses:
          200:
            description: Return login history
+           schema:
+             $ref: "#/definitions/UserHistory"
          403:
            description: Forbidden error
+           schema:
+             $ref: "#/definitions/ApiResponse"
        tags:
          - account
+       definitions:
+         ApiResponse:
+           type: "object"
+           properties:
+             message:
+              type: "string"
+             status:
+              type: "string"
+         UserHistory:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+              message:
+                type: "string"
+              data:
+                type: "object"
+                properties:
+                  user_id:
+                    type: "string"
+                    format: "uuid"
+                  user_agent:
+                     type: "string"
+                  info:
+                     type: "string"
+                  date:
+                    type: "string"
+                    format: "date"
        """
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
@@ -244,15 +316,17 @@ def refresh():
          '200':
             description: Return refresh token
             schema:
-              $ref: "#/definitions/TokenMessage"
+              $ref: "#/definitions/AccessTokenMsg"
        tags:
          - account
        definitions:
-         TokenMessage:
+         AccessTokenMsg:
            type: "object"
            properties:
              message:
-              type: "string"
+               type: "string"
+             status:
+               type: "string"
              access_token:
                type: "string"
 
@@ -293,6 +367,8 @@ def logout():
            type: "object"
            properties:
              message:
+              type: "string"
+             status:
               type: "string"
        """
     login = get_jwt_identity()
