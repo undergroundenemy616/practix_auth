@@ -1,17 +1,48 @@
-# practix_auth
+## Как запустить проект:
 
+После клонирования проекта локально необходимо выполнить команду:
+```
+cp template.env .env
+```
+И передать значения переменным, указанным в появившемся файле .env
+
+Затем выполнить команду:
+```
+docker-compose up
+```
+
+#### Подготовка БД:
+```
+docker-compose exec auth flask db migrate
+docker-compose exec auth flask db upgrade
+```
+
+#### Заливка фикстур:
+```
+docker-compose exec auth flask rbac add_base_data
+```
+
+#### Создание суперпользователя:
+```
+flask accounts createsuperuser <username> <password>
+```
+
+
+#### Запуск тестов:
+```
+docker-compose -f docker-compose.test.yaml up --build
+```
+
+
+#### API Документация
+
+0.0.0.0:8000/apidocs
 
 
 | компонент системы AUTH | используемая библиотека |
 | -----------------------|-------------------------|
 | хранение токенов в redis | redis-py |
-| Механизмы работы с сессиями | flask-security |
-| работа с postgresql      | SqlAlchemy |
+| работа с postgresql      | Flask-SQLAlchemy, Flask-Migrate |
 | генерация и валидация jwt | flask-jwt-extended |
-| interproc messages        | grpcio 
 | SwaggerAPI                | flasgger
 
-
-### API 
-
-API documentation: 0.0.0.0:8000/apidocs
