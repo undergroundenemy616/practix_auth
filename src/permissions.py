@@ -62,11 +62,11 @@ def permission_check():
         return jsonify({"type": "error", "message": "required_permission отсутствует в параметрах"}), 400
     login = get_jwt_identity()
     if not User.check_permission(login=login, required_permission=required_permission):
-        return jsonify({"type": "error", "message": "Доступ запрещен"}), 403
-    return jsonify({"type": "success", "message": "Доступ разрешен"}), 200
+        return jsonify({"status": "error", "message": "Доступ запрещен"}), 403
+    return jsonify({"status": "success", "message": "Доступ разрешен"}), 200
 
 
-@permissions.route('/role/<uuid:id>/assign', methods=['PUT'])
+@permissions.route('/roles/<uuid:id>/assign', methods=['PUT'])
 @jwt_required()
 @check_permission(required_permission='role')
 def role_assign(id):
@@ -95,7 +95,8 @@ def role_assign(id):
 
     if not Role.query.filter_by(id=id).first():
         return jsonify({
-            'error': f'объект Role с id={id} не найден',
+            'status': "error",
+            'message': f'объект Role с id={id} не найден',
         }), 404
     if request.method == 'PUT':
         data = request.get_json()
@@ -104,7 +105,8 @@ def role_assign(id):
             RoleAssignSchema().load(data)
         except ValidationError as e:
             return jsonify(e.messages), 400
-        return jsonify({"type": "success", "message": "Роли обновлены"}), 200
+        return jsonify({"status": "success",
+                        "message": "Роли обновлены"}), 200
 
 
 @permissions.route('/roles', methods=['GET', 'POST'])
@@ -143,7 +145,7 @@ def roles_list():
         return jsonify(paginated_roles), 200
 
 
-@permissions.route('/role/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
+@permissions.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
 @jwt_required()
 @check_permission(required_permission='role')
 def role_detail(id):
@@ -195,7 +197,8 @@ def role_detail(id):
     role = Role.query.filter_by(id=id).first()
     if not role:
         return jsonify({
-            'error': f'объект Role с id={id} не найден',
+            'status': 'error',
+            'message': f'объект Role с id={id} не найден',
         }), 404
     if request.method == 'PUT':
         data = request.get_json()
@@ -208,12 +211,13 @@ def role_detail(id):
     elif request.method == 'DELETE':
         db.session.delete(role)
         db.session.commit()
-        return jsonify({"success": f"объект Role с id={id} удален"}), 204
+        return jsonify({"status": "success",
+                        "message": f"объект Role с id={id} удален"}), 204
     else:
         return jsonify(RoleSchema().dump(role)), 200
 
 
-@permissions.route('/permissions', methods=['POST', 'GET'])
+@permissions.route('', methods=['POST', 'GET'])
 @jwt_required()
 @check_permission(required_permission='permissions')
 def permission_list():
@@ -250,7 +254,7 @@ def permission_list():
         return jsonify(paginated_permissions), 200
 
 
-@permissions.route('/permission/<uuid:id>', methods=['DELETE'])
+@permissions.route('/<uuid:id>', methods=['DELETE'])
 @jwt_required()
 @check_permission(required_permission='permission')
 def permission_delete(id):
@@ -279,8 +283,10 @@ def permission_delete(id):
     permission = Permission.query.filter_by(id=id).first()
     if not permission:
         return jsonify({
-            'error': f'объект Permission с id={id} не найден',
+            'status': 'error',
+            'message': f'объект Permission с id={id} не найден',
         }), 404
     db.session.delete(permission)
     db.session.commit()
-    return jsonify({"success": f"объект Permission с id={id} удален"}), 204
+    return jsonify({"status": "success",
+                    "message": f"объект Permission с id={id} удален"}), 204
