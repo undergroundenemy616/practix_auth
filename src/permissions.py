@@ -12,7 +12,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from utils import check_permission
 
-permissions = Blueprint('permissions', __name__)
+permissions = Blueprint('rbac', __name__)
 
 
 @permissions.cli.command("add_base_data")
@@ -217,7 +217,7 @@ def role_detail(id):
         return jsonify(RoleSchema().dump(role)), 200
 
 
-@permissions.route('', methods=['POST', 'GET'])
+@permissions.route('permissions', methods=['POST', 'GET'])
 @jwt_required()
 @check_permission(required_permission='permissions')
 def permission_list():
@@ -254,7 +254,7 @@ def permission_list():
         return jsonify(paginated_permissions), 200
 
 
-@permissions.route('/<uuid:id>', methods=['DELETE'])
+@permissions.route('permissions/<uuid:id>', methods=['DELETE'])
 @jwt_required()
 @check_permission(required_permission='permission')
 def permission_delete(id):
