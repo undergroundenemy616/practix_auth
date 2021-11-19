@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 
 from db.pg_db import init_db, db
 from db.redis_db import init_redis_db, redis_db
-from rbac import permissions
+from rbac import rbac
 from accounts import accounts
 
 
@@ -15,7 +15,7 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
     init_redis_db(app)
     migrate = Migrate(app, db)
     import models
-    app.register_blueprint(permissions, url_prefix='/api/v1/rbac')
+    app.register_blueprint(rbac, url_prefix='/api/v1/rbac')
     app.register_blueprint(accounts, url_prefix='/api/v1/accounts')
     jwt = JWTManager(app)
 
