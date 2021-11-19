@@ -15,7 +15,7 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
     init_redis_db(app)
     migrate = Migrate(app, db)
     import models
-    app.register_blueprint(permissions, url_prefix='/api/v1/permissions')
+    app.register_blueprint(permissions, url_prefix='/api/v1/rbac')
     app.register_blueprint(accounts, url_prefix='/api/v1/accounts')
     jwt = JWTManager(app)
 
