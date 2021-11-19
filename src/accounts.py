@@ -14,7 +14,6 @@ from utils import register_user
 from models import User, History
 from schemas import UserLoginSchema, UserSchemaDetailed, UserHistorySchema
 from db.pg_db import db
-from flasgger import Schema, fields
 
 accounts = Blueprint('accounts', __name__)
 
