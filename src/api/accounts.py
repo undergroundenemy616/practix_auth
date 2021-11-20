@@ -9,10 +9,10 @@ from flask_jwt_extended.exceptions import JWTExtendedException
 from marshmallow import ValidationError
 
 from db.redis_db import redis_db
+from models.accounts import User, History
+from schemas.accounts import UserSchemaDetailed, UserHistorySchema, UserLoginSchema
 from utils import register_user
 
-from models import User, History
-from schemas import UserLoginSchema, UserSchemaDetailed, UserHistorySchema
 from db.pg_db import db
 
 accounts = Blueprint('accounts', __name__)
@@ -141,9 +141,9 @@ def sign_in():
     }), 403
 
 
-@accounts.route('/update', methods=['GET', 'POST'])
+@accounts.route('/account', methods=['GET', 'POST'])
 @jwt_required()
-def update():
+def account():
     """update password
         ---
         get:

@@ -4,11 +4,12 @@ from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
 from db.pg_db import db
-from models import Permission, Role, User
-from schemas import (PermissionSchema, RoleCreateSchema, RoleSchema,
-                     RoleUpdateSchema, RoleAssignSchema)
+
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from models.accounts import User
+from models.rbac import Permission, Role
+from schemas.rbac import RoleAssignSchema, RoleSchema, RoleCreateSchema, RoleUpdateSchema, PermissionSchema
 from utils import check_permission
 
 rbac = Blueprint('rbac', __name__)

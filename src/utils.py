@@ -5,8 +5,9 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 from marshmallow import ValidationError
 
 from db.pg_db import db
-from models import User, Role
-from schemas import UserLoginSchema
+from models.accounts import User
+from models.rbac import Role
+from schemas.accounts import UserLoginSchema
 
 
 def register_user(login, password, superuser=False):

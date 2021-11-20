@@ -1,7 +1,9 @@
 import re
 
 from marshmallow import ValidationError
-from models import Role, Permission, User
+
+from models.accounts import User
+from models.rbac import Permission
 
 
 def validate_password(password):
