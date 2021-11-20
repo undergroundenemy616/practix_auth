@@ -24,7 +24,7 @@ docker-compose exec auth flask rbac add_base_data
 
 #### Создание суперпользователя:
 ```
-flask accounts createsuperuser <username> <password>
+docker-compose exec auth flask accounts createsuperuser <username> <password>
 ```
 
 
