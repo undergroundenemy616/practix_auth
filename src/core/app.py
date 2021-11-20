@@ -10,7 +10,6 @@ from api.accounts import accounts
 
 migrate = Migrate()
 
-
 def create_app(configuration='core.config.DevelopmentBaseConfig'):
     app = Flask(__name__)
     app.config.from_object(configuration)
@@ -32,6 +31,11 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
     @app.before_first_request
     def setup_db():
         db.create_all()
+
+    @app.teardown_appcontext
+    def close_db():
+        db.close()
+        redis_db.close()
 
     return app
 
