@@ -4,11 +4,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from db.pg_db import db
-from models.mixins import BaseModel
+from models.mixins import BaseModelMixin
 from models.rbac import Role
 
 
-class User(db.Model, BaseModel):
+class User(db.Model, BaseModelMixin):
     __tablename__ = 'user'
 
     login = db.Column(db.String, unique=True, nullable=False)
@@ -40,7 +40,7 @@ class User(db.Model, BaseModel):
         return f'<User {self.login}>'
 
 
-class History(db.Model, BaseModel):
+class History(db.Model, BaseModelMixin):
     __tablename__ = 'history'
 
     user_id = db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('user.id', ondelete='CASCADE'))

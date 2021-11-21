@@ -1,7 +1,8 @@
 from sqlalchemy.dialects.postgresql import UUID
 
 from db.pg_db import db
-from models.mixins import BaseModel
+from models.mixins import BaseModelMixin
+from models.accounts import User
 
 role_permission = db.Table(
     'role_permission',
@@ -10,7 +11,7 @@ role_permission = db.Table(
 )
 
 
-class Permission(db.Model, BaseModel):
+class Permission(db.Model, BaseModelMixin):
     __tablename__ = 'permission'
 
     name = db.Column(db.String, unique=True, nullable=False)
@@ -19,7 +20,7 @@ class Permission(db.Model, BaseModel):
         return f'<Permission {self.name}>'
 
 
-class Role(db.Model, BaseModel):
+class Role(db.Model, BaseModelMixin):
     __tablename__ = 'role'
 
     name = db.Column(db.String, unique=True, nullable=False)
@@ -34,3 +35,9 @@ class Role(db.Model, BaseModel):
     @property
     def permissions_names(self):
         return [permission.name for permission in self.permissions]
+
+    def assign_role(self, data):
+        User.query.filter(User.id.in_([data.pop('users')])).update({'role_id': self.id},
+                                                                   synchronize_session=False)
+        db.session.commit()
+        return

@@ -290,14 +290,13 @@ def get_user_history():
             'status': 'error',
             'message': 'Ошибка доступа',
         }), 403
-    paginated_user_history = History.get_paginated_data(page=request.args.get('page'),
-                                                        count=request.args.get('count'),
-                                                        schema=UserHistorySchema,
-                                                        filtered_kwargs={'user_id': user.id})
+    paginated_user_history = History.query.filter_by(user_id=user.id).\
+        paginate(page=request.args.get('page'),
+                 per_page=request.args.get('count'))
     return jsonify({
             'status': 'success',
             'message': f'История действий {login}',
-            'data': paginated_user_history
+            'data': UserHistorySchema().dump(paginated_user_history.items, many=True)
         }), 200
 
 
@@ -342,12 +341,12 @@ def refresh():
     }), 200
 
 
-@accounts.route('/logout', methods=['DELETE'])
+@accounts.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     """User logout point
        ---
-       delete:
+       post:
          description: user_logout
          summary: User logaut
          security:
@@ -393,7 +392,9 @@ def after_request_func(response):
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if user:
-        UserHistorySchema().load({"user_id": str(user.id),
-                                  "user_agent": str(request.user_agent),
-                                  "info": f"{request.method} {request.path}"})
+        history = UserHistorySchema().load({"user_id": str(user.id),
+                                            "user_agent": str(request.user_agent),
+                                            "info": f"{request.method} {request.path}"})
+        db.session.add(history)
+        db.session.commit()
     return response

@@ -121,21 +121,21 @@ def role_assign(id):
                  type: "string"
          """
 
-    if not Role.query.filter_by(id=id).first():
+    role = Role.query.filter_by(id=id).first()
+    if not role:
         return jsonify({
             'status': "error",
             'message': f'объект Role с id={id} не найден',
         }), 404
     if request.method == 'PUT':
-        data = request.get_json()
-        data['role_id'] = id
         try:
-            RoleAssignSchema().load(data)
+            assign_users = RoleAssignSchema().load(request.get_json())
         except ValidationError as e:
             return jsonify({
                 'status': 'error',
                 'message': e.messages,
             }), 400
+        role.assign_role(assign_users)
         return jsonify({"status": "success",
                         "message": "Роли обновлены"}), 200
 
@@ -203,19 +203,20 @@ def roles_list():
                 'status': 'error',
                 'message': e.messages,
             }), 400
+        db.session.add(role)
+        db.session.commit()
         return jsonify({
                 'status': 'success',
                 'message': 'Роль успешно создана',
                 'data': RoleSchema().dump(role)
             }), 201
     else:
-        paginated_roles = Role.get_paginated_data(page=request.args.get('page'),
-                                                  count=request.args.get('count'),
-                                                  schema=RoleSchema)
+        paginated_roles = Role.query.paginate(page=request.args.get('page'),
+                                              per_page=request.args.get('count'))
         return jsonify({
                 'status': 'success',
                 'message': 'Все роли',
-                'data': paginated_roles
+                'data': RoleSchema().dump(paginated_roles.items, many=True)
             }), 200
 
 
@@ -300,6 +301,8 @@ def role_detail(id):
                 'status': 'error',
                 'message': e.messages,
             }), 400
+        db.session.add(role)
+        db.session.commit()
         return jsonify({
                 'status': 'success',
                 'message': 'Роль успешно обновлена',
@@ -379,19 +382,20 @@ def permission_list():
                 'status': 'error',
                 'message': e.messages,
             }), 400
+        db.session.add(permission)
+        db.session.commit()
         return jsonify({
             'status': 'success',
             'message': f"Разрешение успешно создано",
             'data': PermissionSchema().dump(permission)
         }), 201
     else:
-        paginated_permissions = Permission.get_paginated_data(page=request.args.get('page'),
-                                                              count=request.args.get('count'),
-                                                              schema=PermissionSchema)
+        paginated_permissions = Permission.query.paginate(page=request.args.get('page'),
+                                                          per_page=request.args.get('count'))
         return jsonify({
             'status': 'success',
             'message': 'Все разрешения',
-            'data': paginated_permissions
+            'data': PermissionSchema().dump(paginated_permissions.items, many=True)
         }), 200
 
 
