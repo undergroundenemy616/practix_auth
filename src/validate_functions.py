@@ -3,7 +3,7 @@ import re
 from marshmallow import ValidationError
 
 from models.accounts import User
-from models.rbac import Permission
+from models.rbac import Permission, Role
 
 
 def validate_password(password):

@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from pprint import pprint
 import click
 
@@ -6,12 +7,11 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
     verify_jwt_in_request
 from flask_jwt_extended.exceptions import JWTExtendedException
-from marshmallow import ValidationError
 
 from db.redis_db import redis_db
 from models.accounts import User, History
 from schemas.accounts import UserSchemaDetailed, UserHistorySchema, UserLoginSchema
-from utils import register_user
+from utils import register_user, get_login_and_user_or_403
 
 from db.pg_db import db
 
@@ -23,7 +23,7 @@ accounts = Blueprint('accounts', __name__)
 @click.argument("password")
 def create_user(login, password):
     result = register_user(login, password, superuser=True)
-    pprint(result[0])
+    pprint(result[0].json)
 
 
 @accounts.route('/register', methods=['POST'])
@@ -116,10 +116,7 @@ def sign_in():
 
 
         """
-    try:
-        user_try = UserLoginSchema().load(request.get_json())
-    except ValidationError as e:
-        return jsonify(e.messages), 400
+    user_try = UserLoginSchema().load(request.get_json())
     login_try = user_try['login']
     password_try = user_try['password']
     user = User.query.filter_by(login=login_try).first()
@@ -133,12 +130,12 @@ def sign_in():
             'message': f'Пользователь {login} авторизован',
             'access_token': access_token,
             'refresh_token': refresh_token
-        }), 200
+        }), HTTPStatus.OK
 
     return jsonify({
         'status': 'error',
         'message': 'Неверная пара логин-пароль',
-    }), 403
+    }), HTTPStatus.FORBIDDEN
 
 
 @accounts.route('/account', methods=['GET', 'POST'])
@@ -189,37 +186,23 @@ def account():
                 type: "string"
 
         """
-    login = get_jwt_identity()
-    user = User.query.filter_by(login=login).first()
-
-    if not user:
-        return jsonify({
-            'status': 'error',
-            'message': 'Ошибка доступа',
-        }), 403
-
+    login, user = get_login_and_user_or_403()
     if request.method == "GET":
         result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
         return jsonify({
             'status': 'success',
             'message': f'Аккаунт {login}',
             'data': result
-        }), 200
+        }), HTTPStatus.OK
 
-    try:
-        new_user_info = UserSchemaDetailed().load(request.get_json(), partial=True)
-    except ValidationError as e:
-        return jsonify({
-                'status': 'error',
-                'message': e.messages,
-            }), 400
+    new_user_info = UserSchemaDetailed().load(request.get_json(), partial=True)
 
     if new_login := new_user_info.get('login', None):
         if User.query.filter(User.login == new_login, User.id != user.id).first():
             return jsonify({
                 'status': 'error',
                 'message': 'Пользователь с таким login уже зарегистрирован',
-            }), 400
+            }), HTTPStatus.BAD_REQUEST
 
     if new_password := new_user_info.pop('password', None):
         user.set_password(new_password)
@@ -230,7 +213,7 @@ def account():
     return jsonify({
         'status': 'success',
         'message': f'Пользователь {login} успешно обновлен',
-    }), 200
+    }), HTTPStatus.OK
 
 
 @accounts.route('/user-history', methods=['GET'])
@@ -283,13 +266,7 @@ def get_user_history():
                     type: "string"
                     format: "date"
        """
-    login = get_jwt_identity()
-    user = User.query.filter_by(login=login).first()
-    if not user:
-        return jsonify({
-            'status': 'error',
-            'message': 'Ошибка доступа',
-        }), 403
+    login, user = get_login_and_user_or_403()
     paginated_user_history = History.query.filter_by(user_id=user.id).\
         paginate(page=request.args.get('page'),
                  per_page=request.args.get('count'))
@@ -297,7 +274,7 @@ def get_user_history():
             'status': 'success',
             'message': f'История действий {login}',
             'data': UserHistorySchema().dump(paginated_user_history.items, many=True)
-        }), 200
+        }), HTTPStatus.OK
 
 
 @accounts.route('/refresh', methods=['POST'])
@@ -338,7 +315,7 @@ def refresh():
         'status': 'success',
         'message': 'Token успешно обновлен',
         'access_token': access_token,
-    }), 200
+    }), HTTPStatus.OK
 
 
 @accounts.route('/logout', methods=['POST'])
@@ -375,7 +352,7 @@ def logout():
     return jsonify({
         'status': 'success',
         'message': f'Сеанс пользователя {login} успешно завершен'
-    }), 200
+    }), HTTPStatus.OK
 
 
 @accounts.after_request
