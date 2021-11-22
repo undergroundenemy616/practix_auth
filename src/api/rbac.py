@@ -1,7 +1,7 @@
 import json
+from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request
-from marshmallow import ValidationError
 
 from db.pg_db import db
 
@@ -73,11 +73,12 @@ def permission_check():
 
     required_permission = request.args.get('required_permission')
     if not required_permission:
-        return jsonify({"type": "error", "message": "required_permission отсутствует в параметрах"}), 400
+        return jsonify({"type": "error",
+                        "message": "required_permission отсутствует в параметрах"}), HTTPStatus.BAD_REQUEST
     login = get_jwt_identity()
     if not User.check_permission(login=login, required_permission=required_permission):
-        return jsonify({"status": "error", "message": "Доступ запрещен"}), 403
-    return jsonify({"status": "success", "message": "Доступ разрешен"}), 200
+        return jsonify({"status": "error", "message": "Доступ запрещен"}), HTTPStatus.FORBIDDEN
+    return jsonify({"status": "success", "message": "Доступ разрешен"}), HTTPStatus.OK
 
 
 @rbac.route('/roles/<uuid:id>/assign', methods=['PUT'])
@@ -126,18 +127,14 @@ def role_assign(id):
         return jsonify({
             'status': "error",
             'message': f'объект Role с id={id} не найден',
-        }), 404
+        }), HTTPStatus.NOT_FOUND
     if request.method == 'PUT':
-        try:
-            assign_users = RoleAssignSchema().load(request.get_json())
-        except ValidationError as e:
-            return jsonify({
-                'status': 'error',
-                'message': e.messages,
-            }), 400
+        assign_users = RoleAssignSchema().load(request.get_json())
+
         role.assign_role(assign_users)
+
         return jsonify({"status": "success",
-                        "message": "Роли обновлены"}), 200
+                        "message": "Роли обновлены"}), HTTPStatus.OK
 
 
 @rbac.route('/roles', methods=['GET', 'POST'])
@@ -196,20 +193,15 @@ def roles_list():
          """
 
     if request.method == 'POST':
-        try:
-            role = RoleCreateSchema().load(request.get_json())
-        except ValidationError as e:
-            return jsonify({
-                'status': 'error',
-                'message': e.messages,
-            }), 400
+
+        role = RoleCreateSchema().load(request.get_json())
         db.session.add(role)
         db.session.commit()
         return jsonify({
                 'status': 'success',
                 'message': 'Роль успешно создана',
                 'data': RoleSchema().dump(role)
-            }), 201
+            }), HTTPStatus.CREATED
     else:
         paginated_roles = Role.query.paginate(page=request.args.get('page'),
                                               per_page=request.args.get('count'))
@@ -217,7 +209,7 @@ def roles_list():
                 'status': 'success',
                 'message': 'Все роли',
                 'data': RoleSchema().dump(paginated_roles.items, many=True)
-            }), 200
+            }), HTTPStatus.OK
 
 
 @rbac.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
@@ -290,35 +282,29 @@ def role_detail(id):
         return jsonify({
             'status': 'error',
             'message': f'объект Role с id={id} не найден',
-        }), 404
+        }), HTTPStatus.NOT_FOUND
     if request.method == 'PUT':
         data = request.get_json()
         data['id'] = id
-        try:
-            role = RoleUpdateSchema().load(data)
-        except ValidationError as e:
-            return jsonify({
-                'status': 'error',
-                'message': e.messages,
-            }), 400
+        role = RoleUpdateSchema().load(data)
         db.session.add(role)
         db.session.commit()
         return jsonify({
                 'status': 'success',
                 'message': 'Роль успешно обновлена',
                 'data': RoleSchema().dump(role)
-            }), 200
+            }), HTTPStatus.OK
     elif request.method == 'DELETE':
         db.session.delete(role)
         db.session.commit()
         return jsonify({"status": "success",
-                        "message": f"объект Role с id={id} удален"}), 204
+                        "message": f"объект Role с id={id} удален"}), HTTPStatus.NO_CONTENT
     else:
         return jsonify({
             'status': 'success',
             'message': f"Объект Role с id={id}",
             'data': RoleSchema().dump(role)
-        }), 200
+        }), HTTPStatus.OK
 
 
 @rbac.route('permissions', methods=['POST', 'GET'])
@@ -375,20 +361,16 @@ def permission_list():
           """
 
     if request.method == 'POST':
-        try:
-            permission = PermissionSchema().load(request.get_json())
-        except ValidationError as e:
-            return jsonify({
-                'status': 'error',
-                'message': e.messages,
-            }), 400
+        permission = PermissionSchema().load(request.get_json())
+
         db.session.add(permission)
         db.session.commit()
+
         return jsonify({
             'status': 'success',
             'message': f"Разрешение успешно создано",
             'data': PermissionSchema().dump(permission)
-        }), 201
+        }), HTTPStatus.CREATED
     else:
         paginated_permissions = Permission.query.paginate(page=request.args.get('page'),
                                                           per_page=request.args.get('count'))
@@ -396,7 +378,7 @@ def permission_list():
             'status': 'success',
             'message': 'Все разрешения',
             'data': PermissionSchema().dump(paginated_permissions.items, many=True)
-        }), 200
+        }), HTTPStatus.OK
 
 
 @rbac.route('permissions/<uuid:id>', methods=['DELETE'])
@@ -442,8 +424,8 @@ def permission_delete(id):
         return jsonify({
             'status': 'error',
             'message': f'объект Permission с id={id} не найден',
-        }), 404
+        }), HTTPStatus.NOT_FOUND
     db.session.delete(permission)
     db.session.commit()
     return jsonify({"status": "success",
-                    "message": f"объект Permission с id={id} удален"}), 204
+                    "message": f"объект Permission с id={id} удален"}), HTTPStatus.NO_CONTENT
