@@ -46,7 +46,7 @@ def check_permission(required_permission: str):
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
             if not User.check_permission(login=login, required_permission=required_permission):
-                return jsonify({'type': 'error', 'message': 'Доступ запрещен'}), HTTPStatus.FORBIDDEN
+                abort(403)
             return f(*args, **kwargs)
 
         return wrapper
