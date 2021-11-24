@@ -2,6 +2,7 @@ import json
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request
+from werkzeug.exceptions import abort
 
 from db.pg_db import db
 
@@ -77,7 +78,7 @@ def permission_check():
                         "message": "required_permission отсутствует в параметрах"}), HTTPStatus.BAD_REQUEST
     login = get_jwt_identity()
     if not User.check_permission(login=login, required_permission=required_permission):
-        return jsonify({"status": "error", "message": "Доступ запрещен"}), HTTPStatus.FORBIDDEN
+        abort(403)
     return jsonify({"status": "success", "message": "Доступ разрешен"}), HTTPStatus.OK
 
 
