@@ -6,6 +6,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from db.pg_db import db
 from models.mixins import BaseModelMixin
 from models.rbac import Role
+from sqlalchemy import UniqueConstraint
+
+
+def create_partition(target, connection, **kw) -> None:
+    """ creating partition by user_sign_in """
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS "user_sign_in_smart" PARTITION OF "users_sign_in" FOR VALUES IN ('smart')"""
+    )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS "user_sign_in_mobile" PARTITION OF "users_sign_in" FOR VALUES IN ('mobile')"""
+    )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS "user_sign_in_web" PARTITION OF "users_sign_in" FOR VALUES IN ('web')"""
+    )
 
 
 class User(db.Model, BaseModelMixin):
@@ -41,12 +55,19 @@ class User(db.Model, BaseModelMixin):
 
 
 class History(db.Model, BaseModelMixin):
-    __tablename__ = 'history'
-
+    __tablename__ = 'users_sign_in'
+    __table_args__ = (
+        UniqueConstraint('id', 'user_device_type'),
+        {
+            'postgresql_partition_by': 'LIST (user_device_type)',
+            'listeners': [('after_create', create_partition)],
+        }
+    )
     user_id = db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('user.id', ondelete='CASCADE'))
     user_agent = db.Column(db.String)
     date = db.Column(db.DateTime(), default=datetime.utcnow)
     info = db.Column(db.String)
+    user_device_type = db.Column(db.Text, primary_key=True)
 
     def __str__(self):
         return f'<History {self.user_id}>'

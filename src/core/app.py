@@ -8,8 +8,6 @@ from marshmallow import ValidationError
 
 from db.pg_db import init_db, db
 from db.redis_db import init_redis_db, redis_db
-from api.rbac import rbac
-from api.accounts import accounts
 
 migrate = Migrate()
 
@@ -29,6 +27,8 @@ def forbidden_handler(e):
 
 
 def create_app(configuration='core.config.DevelopmentBaseConfig'):
+    from api.rbac import rbac
+    from api.accounts import accounts
     app = Flask(__name__)
     app.config.from_object(configuration)
     init_db(app)
