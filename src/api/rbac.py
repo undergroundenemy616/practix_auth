@@ -131,8 +131,10 @@ def role_assign(id):
         }), HTTPStatus.NOT_FOUND
     if request.method == 'PUT':
         assign_users = RoleAssignSchema().load(request.get_json())
-
-        role.assign_role(assign_users)
+        User.query.filter(User.id.in_([assign_users.pop('users')])).\
+            update({'role_id': role.id},
+                   synchronize_session=False)
+        db.session.commit()
 
         return jsonify({"status": "success",
                         "message": "Роли обновлены"}), HTTPStatus.OK

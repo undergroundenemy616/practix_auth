@@ -2,16 +2,17 @@ from http import HTTPStatus
 from pprint import pprint
 import click
 
-from flask import current_app
+from flask import current_app, redirect
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
     verify_jwt_in_request
 from flask_jwt_extended.exceptions import JWTExtendedException
 
 from db.redis_db import redis_db
-from models.accounts import User, History
+from models.accounts import User, History, SocialAccount
 from schemas.accounts import UserSchemaDetailed, UserHistorySchema, UserLoginSchema
-from utils import register_user, get_login_and_user_or_403
+from utils import register_user, get_login_and_user_or_403, OAuthSignIn
+
 
 from db.pg_db import db
 
@@ -315,6 +316,65 @@ def refresh():
         'status': 'success',
         'message': 'Token успешно обновлен',
         'access_token': access_token,
+    }), HTTPStatus.OK
+
+
+@accounts.route('/unpin/<provider>')
+@jwt_required()
+def oauth_authorize(provider):
+    login = get_jwt_identity()
+    user = User.query.filter_by(login=login).first()
+    if not user:
+        return jsonify({
+            'status': 'error',
+            'message': f'Пользователь с таким jwt_identity не найден',
+        }), HTTPStatus.UNAUTHORIZED
+    social_account = SocialAccount.query.filter_by(user_id=user.id, social_name=provider).first()
+    if not social_account:
+        return jsonify({
+            'status': 'error',
+            'message': f'Прикрепленный аккаунт в соцсети {provider} не найден',
+        }), HTTPStatus.NOT_FOUND
+    db.session.remove(social_account)
+    db.session.commit()
+    return jsonify({
+        'status': 'success',
+        'message': f'Аккаунт соцсети {provider} успешно откреплен',
+    }), HTTPStatus.OK
+
+
+@accounts.route('/authorize/<provider>')
+@jwt_required(optional=True)
+def oauth_authorize(provider):
+    if get_jwt_identity():
+        redirect(current_app.config['HOST'])
+    oauth = OAuthSignIn.get_provider(provider)
+    return oauth.authorize()
+
+
+@accounts.route('/callback/<provider>')
+@jwt_required(optional=True)
+def oauth_callback(provider):
+    if get_jwt_identity():
+        redirect(current_app.config['HOST'])
+    oauth = OAuthSignIn.get_provider(provider)
+    social_id, email, username = oauth.callback()
+    if not social_id:
+        return jsonify({
+            'status': 'error',
+            'message': 'Ошибка авторизациии',
+        }), HTTPStatus.UNAUTHORIZED
+    user = SocialAccount.get_or_create_user(social_id=social_id,
+                                            social_name=provider,
+                                            username=username,
+                                            email=email)
+    access_token = create_access_token(identity=user.login)
+    refresh_token = create_refresh_token(identity=user.login)
+    return jsonify({
+        'status': 'success',
+        'message': f'Пользователь {user.login} авторизован',
+        'access_token': access_token,
+        'refresh_token': refresh_token
     }), HTTPStatus.OK
 
 
