@@ -7,7 +7,8 @@ from db.pg_db import db
 from models.mixins import BaseModelMixin
 from models.rbac import Role
 from sqlalchemy import UniqueConstraint
-
+import random
+import string
 
 def create_partition(target, connection, **kw) -> None:
     """ creating partition by user_sign_in """
@@ -52,6 +53,48 @@ class User(db.Model, BaseModelMixin):
 
     def __str__(self):
         return f'<User {self.login}>'
+
+
+class SocialAccount(db.Model, BaseModelMixin):
+    __tablename__ = 'social_account'
+
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship(User, backref=db.backref('social_accounts', lazy=True))
+
+    social_id = db.Column(db.Text, nullable=False)
+    social_name = db.Column(db.Text, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('social_id', 'social_name', name='social_pk'),)
+
+    def __repr__(self):
+        return f'<SocialAccount {self.social_name}:{self.user_id}>'
+
+    @classmethod
+    def get_or_create_user(cls, social_id: str,
+                           social_name: str,
+                           username: str,
+                           email: str) -> User:
+        social_account = cls.query.filter_by(social_id=social_id,
+                                             social_name=social_name).first()
+        if social_account:
+            user = User.query.filter_by(id=social_account.user_id).first()
+        else:
+            password = ''.join(random.choice(string.ascii_lowercase) for _ in range(15))
+            if User.query.filter_by(login=username).first():
+                username = f"{social_id}_{username}"
+            role = Role.query.filter_by(name='BaseUser').first().id
+            user = User(email=email,
+                        login=username,
+                        role=role)
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            social_account = SocialAccount(user_id=user.id,
+                                           social_id=social_id,
+                                           social_name=social_name)
+            db.session.add(social_account)
+            db.session.commit()
+        return user
 
 
 class History(db.Model, BaseModelMixin):
