@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from grpc import auth_pb2 as grpc_dot_auth__pb2
+import auth_pb2 as auth__pb2
 
 
 class AuthStub(object):
@@ -16,8 +16,8 @@ class AuthStub(object):
         """
         self.CheckRole = channel.unary_unary(
                 '/Auth/CheckRole',
-                request_serializer=grpc_dot_auth__pb2.CheckRoleRequest.SerializeToString,
-                response_deserializer=grpc_dot_auth__pb2.CheckRoleResponse.FromString,
+                request_serializer=auth__pb2.CheckRoleRequest.SerializeToString,
+                response_deserializer=auth__pb2.CheckRoleResponse.FromString,
                 )
 
 
@@ -35,8 +35,8 @@ def add_AuthServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'CheckRole': grpc.unary_unary_rpc_method_handler(
                     servicer.CheckRole,
-                    request_deserializer=grpc_dot_auth__pb2.CheckRoleRequest.FromString,
-                    response_serializer=grpc_dot_auth__pb2.CheckRoleResponse.SerializeToString,
+                    request_deserializer=auth__pb2.CheckRoleRequest.FromString,
+                    response_serializer=auth__pb2.CheckRoleResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -60,7 +60,7 @@ class Auth(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Auth/CheckRole',
-            grpc_dot_auth__pb2.CheckRoleRequest.SerializeToString,
-            grpc_dot_auth__pb2.CheckRoleResponse.FromString,
+            auth__pb2.CheckRoleRequest.SerializeToString,
+            auth__pb2.CheckRoleResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
