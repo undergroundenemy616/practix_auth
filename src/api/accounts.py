@@ -319,6 +319,30 @@ def refresh():
     }), HTTPStatus.OK
 
 
+@accounts.route('/unpin/<provider>')
+@jwt_required()
+def oauth_authorize(provider):
+    login = get_jwt_identity()
+    user = User.query.filter_by(login=login).first()
+    if not user:
+        return jsonify({
+            'status': 'error',
+            'message': f'Пользователь с таким jwt_identity не найден',
+        }), HTTPStatus.UNAUTHORIZED
+    social_account = SocialAccount.query.filter_by(user_id=user.id, social_name=provider).first()
+    if not social_account:
+        return jsonify({
+            'status': 'error',
+            'message': f'Прикрепленный аккаунт в соцсети {provider} не найден',
+        }), HTTPStatus.NOT_FOUND
+    db.session.remove(social_account)
+    db.session.commit()
+    return jsonify({
+        'status': 'success',
+        'message': f'Аккаунт соцсети {provider} успешно откреплен',
+    }), HTTPStatus.OK
+
+
 @accounts.route('/authorize/<provider>')
 @jwt_required(optional=True)
 def oauth_authorize(provider):
