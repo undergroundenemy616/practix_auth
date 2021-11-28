@@ -41,7 +41,7 @@ docker-compose -f docker-compose.test.yaml up --build
 
 | компонент системы AUTH | используемая библиотека |
 | -----------------------|-------------------------|
-| хранение токенов в redis | redis-py |
+| хранение токенов в redis | redis-py, flask-redis |
 | работа с postgresql      | Flask-SQLAlchemy, Flask-Migrate |
 | генерация и валидация jwt | flask-jwt-extended |
 | SwaggerAPI                | flasgger
