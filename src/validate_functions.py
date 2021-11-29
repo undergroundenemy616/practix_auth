@@ -43,5 +43,5 @@ def validate_exist_users(users):
 
 
 def validate_device_type(device_name):
-    if device_name not in ['TV', 'browser', 'mobile']:
+    if device_name not in ['smart', 'web', 'mobile']:
         raise ValidationError(f"Некорректный тип устройства пользователя")
