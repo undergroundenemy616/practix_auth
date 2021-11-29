@@ -16,7 +16,10 @@ class BaseConfig:
     # Настройки Redis
     REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
     REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+    # База для просроченных токенов
     REDIS_DB = os.getenv('REDIS_DB', 0)
+    # База для rate limit
+    REDIS_RATE_DB = os.getenv('REDIS_RATE_DB', 1)
     # Настройки Postgres
     POSTGRES_DB = os.getenv('POSTGRES_DB', 'auth_database')
     POSTGRES_USER = os.getenv('POSTGRES_USER', 'postgres')
@@ -34,6 +37,7 @@ class BaseConfig:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     JSON_AS_ASCII = False
 
+    REQUEST_LIMIT_PER_MINUTE = 60
 
 class DevelopmentBaseConfig(BaseConfig):
     DEBUG = True
