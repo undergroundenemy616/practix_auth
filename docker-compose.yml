@@ -3,7 +3,8 @@ services:
     image: redis:6.2.6-alpine
     volumes:
       - auth_redis_data:/var/lib/redis/data
-#    restart: always
+    networks:
+      - movies_network
 
   auth-db:
     image: postgres:14
@@ -11,7 +12,22 @@ services:
       - ./.env
     volumes:
       - auth_db_data:/var/lib/postgresql/data/
-#    restart: always
+    networks:
+      - movies_network
+
+  auth-grpc:
+    build:
+      context: src/
+      dockerfile: Dockerfile.grpc
+    env_file:
+      - ./.env
+    volumes:
+      - ./src:/code
+    networks:
+      - movies_network
+    depends_on:
+      - auth-db
+      - auth
 
   auth:
     build:
@@ -26,8 +42,14 @@ services:
     depends_on:
       - auth-db
       - auth-redis
-#    restart: always
+    networks:
+      - movies_network
 
 volumes:
   auth_db_data:
   auth_redis_data:
+
+networks:
+  movies_network:
+    external: true
+    name: movies_network

@@ -3,7 +3,14 @@ from datetime import timedelta
 
 
 class BaseConfig:
-    SECRET_KEY = os.getenv('SECRET_KEY', '')
+    HOST = os.getenv('HOST')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'lol')
+    OAUTH_CREDENTIALS = {
+            'yandex': {
+                'id': os.getenv('YANDEX_CLIENT_ID'),
+                'secret': os.getenv('YANDEX_SECRET')
+            }
+        }
     DEBUG = False
     TESTING = False
     # Настройки Redis
