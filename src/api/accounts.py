@@ -321,7 +321,7 @@ def refresh():
 
 @accounts.route('/unpin/<provider>')
 @jwt_required()
-def oauth_authorize(provider):
+def oauth_unpin(provider):
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if not user:
@@ -431,7 +431,8 @@ def after_request_func(response):
     if user:
         history = UserHistorySchema().load({"user_id": str(user.id),
                                             "user_agent": str(request.user_agent),
-                                            "info": f"{request.method} {request.path}"})
+                                            "info": f"{request.method} {request.path}",
+                                            "user_device_type": request.headers.get("User-Device")})
         db.session.add(history)
         db.session.commit()
     return response

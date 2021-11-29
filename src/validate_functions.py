@@ -40,3 +40,8 @@ def validate_exist_users(users):
         user = User.query.filter_by(id=user_id).first()
         if not user:
             raise ValidationError(f"Пользователь с id={user.id} не существует")
+
+
+def validate_device_type(device_name):
+    if device_name not in ['TV', 'browser', 'mobile']:
+        raise ValidationError(f"Некорректный тип устройства пользователя")
