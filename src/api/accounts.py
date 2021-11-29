@@ -321,7 +321,7 @@ def refresh():
 
 @accounts.route('/unpin/<provider>')
 @jwt_required()
-def oauth_authorize(provider):
+def oauth_unpin(provider):
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if not user:
