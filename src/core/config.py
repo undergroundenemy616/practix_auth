@@ -3,7 +3,7 @@ from datetime import timedelta
 
 
 class BaseConfig:
-    HOST = os.getenv('HOST')
+    HOST = os.getenv('APP_HOST')
     SECRET_KEY = os.getenv('SECRET_KEY', 'lol')
     OAUTH_CREDENTIALS = {
             'yandex': {
@@ -38,6 +38,7 @@ class BaseConfig:
     JSON_AS_ASCII = False
 
     REQUEST_LIMIT_PER_MINUTE = 60
+
 
 class DevelopmentBaseConfig(BaseConfig):
     DEBUG = True
