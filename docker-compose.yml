@@ -19,7 +19,6 @@ services:
     build:
       context: src/
       dockerfile: Dockerfile.grpc
-    image: recommendations
     env_file:
       - ./.env
     volumes:
