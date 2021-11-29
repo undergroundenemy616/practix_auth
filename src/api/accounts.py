@@ -7,6 +7,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
     verify_jwt_in_request
 from flask_jwt_extended.exceptions import JWTExtendedException
+from jwt import InvalidTokenError
 
 from db.redis_db import redis_db
 from models.accounts import User, History, SocialAccount
@@ -424,7 +425,7 @@ def after_request_func(response):
     if not login:
         try:
             verify_jwt_in_request()
-        except JWTExtendedException:
+        except InvalidTokenError:
             return response
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()

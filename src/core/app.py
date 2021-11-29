@@ -2,12 +2,13 @@ from http import HTTPStatus
 
 from flasgger import Swagger
 from flask import Flask, jsonify
-from flask import session, request
-from flask_jwt_extended import JWTManager
-from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt, \
-    verify_jwt_in_request
+from flask import request
+from flask_jwt_extended import JWTManager, verify_jwt_in_request
+from flask_jwt_extended import get_jwt_identity
 from flask_migrate import Migrate
+from jwt import InvalidTokenError
 from marshmallow import ValidationError
+from flask_opentracing import FlaskTracer
 
 from db.pg_db import init_db, db
 from db.redis_db import init_redis_db, redis_db
@@ -15,6 +16,8 @@ from db.redis_db import init_redis_db, redis_db
 from models.accounts import User
 
 import datetime
+
+from tracer import setup_jaeger
 
 migrate = Migrate()
 
@@ -28,9 +31,9 @@ def validation_bad_request_handler(e):
 
 def forbidden_handler(e):
     return jsonify({
-            'status': 'error',
-            'message': 'Ошибка доступа',
-        }), HTTPStatus.FORBIDDEN
+        'status': 'error',
+        'message': 'Ошибка доступа',
+    }), HTTPStatus.FORBIDDEN
 
 
 def create_app(configuration='core.config.DevelopmentBaseConfig'):
@@ -48,6 +51,13 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
     jwt = JWTManager(app)
     app.register_error_handler(ValidationError, validation_bad_request_handler)
     app.register_error_handler(403, forbidden_handler)
+    tracer = FlaskTracer(setup_jaeger, True, app=app)
+
+    @app.before_request
+    def before_request():
+        request_id = request.headers.get('X-Request-Id')
+        if not request_id:
+            raise RuntimeError('request id is requred')
 
     @app.before_request
     def rate_limit():
@@ -55,10 +65,15 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
         data = request.get_json() or {}
         login = data.get('login', None)
         if not login:
-            login = get_jwt_identity()
-        user = User.query.filter_by(login=login).first()
-        if user:
-            user_id = user.id
+            try:
+                verify_jwt_in_request()
+            except InvalidTokenError:
+                pass
+            else:
+                login = get_jwt_identity()
+                user = User.query.filter_by(login=login).first()
+                if user:
+                    user_id = user.id
 
         pipe = redis_db.pipeline()
         now = datetime.datetime.now()
