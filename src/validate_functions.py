@@ -3,7 +3,7 @@ import re
 from marshmallow import ValidationError
 
 from models.accounts import User
-from models.rbac import Permission, Role
+from models.rbac import Role
 
 
 def validate_password(password):
@@ -21,18 +21,6 @@ def must_not_be_blank(data):
 def validate_role_name(name):
     if Role.query.filter_by(name=name).first():
         raise ValidationError("Роль с такими именем уже существует")
-
-
-def validate_permission_name(name):
-    if Permission.query.filter_by(name=name).first():
-        raise ValidationError("Право с такими именем уже существует")
-
-
-def validate_exist_permissions(permissions):
-    for permission_id in permissions:
-        permission = Permission.query.filter_by(id=permission_id).first()
-        if not permission:
-            raise ValidationError(f"Право с id={permission.id} не существует")
 
 
 def validate_exist_users(users):

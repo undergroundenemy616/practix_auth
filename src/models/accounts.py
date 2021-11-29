@@ -42,12 +42,12 @@ class User(db.Model, BaseModelMixin):
         return check_password_hash(self.password, password)
 
     @classmethod
-    def check_permission(cls, login, required_permission):
+    def check_role(cls, login, required_role):
         user = cls.query.filter_by(login=login).first()
         if not user:
             return False
         user_role = Role.query.filter_by(id=user.role_id).first()
-        if required_permission not in user_role.permissions_names:
+        if user_role.name != required_role:
             return False
         return True
 
