@@ -1,3 +1,14 @@
+## Репозиторий Async API:
+
+https://github.com/KonstantinChernov/practix_async_api
+
+Сервисы взаимодействуют по протоколу gRPC. Сервис Async API использует декоратор для представлений, 
+включающий запрос к Auth сервису для проверки роли обращающегося пользователя
+(https://github.com/KonstantinChernov/practix_async_api/blob/master/src/auth_grpc/auth_check.py)
+
+Оба сервиса подключены к Jaeger.
+
+
 ## Как запустить проект:
 
 После клонирования проекта локально необходимо выполнить команду:
