@@ -43,12 +43,12 @@ def register_user(login, password, superuser=False):
     }), HTTPStatus.CREATED
 
 
-def check_permission(required_permission: str):
+def check_role(required_role: str):
     def check_admin_inner(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
-            if not User.check_permission(login=login, required_permission=required_permission):
+            if not User.check_permission(login=login, required_role=required_role):
                 abort(403)
             return f(*args, **kwargs)
 

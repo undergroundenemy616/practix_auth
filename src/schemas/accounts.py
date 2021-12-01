@@ -23,6 +23,7 @@ class UserHistorySchema(Schema):
     user_agent = fields.String()
     date = fields.DateTime(dump_only=True)
     info = fields.String()
+    user_device_type = fields.String()
 
     @post_load
     def create_user_history(self, data, **kwargs):

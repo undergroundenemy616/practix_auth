@@ -430,9 +430,13 @@ def after_request_func(response):
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if user:
-        history = UserHistorySchema().load({"user_id": str(user.id),
-                                            "user_agent": str(request.user_agent),
-                                            "info": f"{request.method} {request.path}"})
-        db.session.add(history)
-        db.session.commit()
+        user_device = request.headers.get("User-Device")
+        if user_device:
+            if user_device in ['smart', 'web', 'mobile']:
+                history = UserHistorySchema().load({"user_id": str(user.id),
+                                                    "user_agent": str(request.user_agent),
+                                                    "info": f"{request.method} {request.path}",
+                                                    "user_device_type": request.headers.get("User-Device")})
+                db.session.add(history)
+                db.session.commit()
     return response
