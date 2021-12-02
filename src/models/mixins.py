@@ -1,12 +1,17 @@
 import uuid
 
-from sqlalchemy.dialects.postgresql import UUID
-
 from db.pg_db import db
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class BaseModelMixin(object):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    id = db.Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
 
     def update(self, **kwargs):
         for key, value in kwargs.items():

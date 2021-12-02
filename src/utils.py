@@ -2,7 +2,8 @@ import functools
 from http import HTTPStatus
 
 from flask import jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                get_jwt_identity)
 from marshmallow import ValidationError
 from werkzeug.exceptions import abort
 
@@ -16,12 +17,20 @@ def register_user(login, password, superuser=False):
     try:
         UserLoginSchema().load({'login': login, 'password': password})
     except ValidationError as e:
-        return jsonify({'status': 'error',
-                        'message': e.messages}), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify({'status': 'error', 'message': e.messages}),
+            HTTPStatus.BAD_REQUEST,
+        )
     if User.query.filter_by(login=login).first():
-        return jsonify({
-            'status': 'error',
-            'message': 'Пользователь с таким login уже зарегистрирован'}), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify(
+                {
+                    'status': 'error',
+                    'message': 'Пользователь с таким login уже зарегистрирован',
+                }
+            ),
+            HTTPStatus.BAD_REQUEST,
+        )
     if superuser:
         role_id = Role.query.filter_by(name='Admin').first().id
     else:
@@ -32,12 +41,17 @@ def register_user(login, password, superuser=False):
     db.session.commit()
     access_token = create_access_token(identity=login)
     refresh_token = create_refresh_token(identity=login)
-    return jsonify({
-        'status': 'success',
-        'message': f'Пользователь {login} успешно зарегистрирован',
-        'access_token': access_token,
-        'refresh_token': refresh_token
-    }), HTTPStatus.CREATED
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': f'Пользователь {login} успешно зарегистрирован',
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+            }
+        ),
+        HTTPStatus.CREATED,
+    )
 
 
 def check_permission(required_permission: str):
@@ -45,7 +59,9 @@ def check_permission(required_permission: str):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
-            if not User.check_permission(login=login, required_permission=required_permission):
+            if not User.check_permission(
+                login=login, required_permission=required_permission
+            ):
                 abort(HTTPStatus.FORBIDDEN)
             return f(*args, **kwargs)
 
@@ -60,4 +76,3 @@ def get_login_and_user_or_403():
     if not user:
         abort(HTTPStatus.FORBIDDEN)
     return login, user
-

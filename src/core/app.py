@@ -1,31 +1,40 @@
 from http import HTTPStatus
 
+from api.accounts import accounts
+from api.rbac import rbac
+from db.pg_db import db, init_db
+from db.redis_db import init_redis_db, redis_db
 from flasgger import Swagger
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from marshmallow import ValidationError
 
-from db.pg_db import init_db, db
-from db.redis_db import init_redis_db, redis_db
-from api.rbac import rbac
-from api.accounts import accounts
-
 migrate = Migrate()
 
 
 def validation_bad_request_handler(e):
-    return jsonify({
-        'status': 'error',
-        'message': e.messages,
-    }), HTTPStatus.BAD_REQUEST
+    return (
+        jsonify(
+            {
+                'status': 'error',
+                'message': e.messages,
+            }
+        ),
+        HTTPStatus.BAD_REQUEST,
+    )
 
 
 def forbidden_handler(e):
-    return jsonify({
-            'status': 'error',
-            'message': 'Ошибка доступа',
-        }), HTTPStatus.FORBIDDEN
+    return (
+        jsonify(
+            {
+                'status': 'error',
+                'message': 'Ошибка доступа',
+            }
+        ),
+        HTTPStatus.FORBIDDEN,
+    )
 
 
 def create_app(configuration='core.config.DevelopmentBaseConfig'):

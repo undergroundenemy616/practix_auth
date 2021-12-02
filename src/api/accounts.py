@@ -1,18 +1,17 @@
 from http import HTTPStatus
 from pprint import pprint
+
 import click
-
-from flask import current_app
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt, \
-    verify_jwt_in_request
-
-from db.redis_db import redis_db
-from models.accounts import User, History
-from schemas.accounts import UserSchemaDetailed, UserHistorySchema, UserLoginSchema
-from utils import register_user, get_login_and_user_or_403
-
 from db.pg_db import db
+from db.redis_db import redis_db
+from flask import Blueprint, current_app, jsonify, request
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                get_jwt, get_jwt_identity, jwt_required,
+                                verify_jwt_in_request)
+from models.accounts import History, User
+from schemas.accounts import (UserHistorySchema, UserLoginSchema,
+                              UserSchemaDetailed)
+from utils import get_login_and_user_or_403, register_user
 
 accounts = Blueprint('accounts', __name__)
 
@@ -62,59 +61,59 @@ def register():
 @accounts.route('/login', methods=['POST'])
 def sign_in():
     """login
-        ---
-        post:
-          description: register_user
-          summary: Register user
-          parameters:
-          - name: login
-            in: path
-            description: login
-            schema:
-              type: string
-          - name: password
-            in: path
-            description: password
-            schema:
-              type: string
+    ---
+    post:
+      description: register_user
+      summary: Register user
+      parameters:
+      - name: login
+        in: path
+        description: login
+        schema:
+          type: string
+      - name: password
+        in: path
+        description: password
+        schema:
+          type: string
 
-          requestBody:
-            content:
-              application/json:
-                schema: UserIn
-        responses:
-          '201':
-            description: Ok
-            schema:
-              $ref: "#/definitions/TokensMsg"
-          '403':
-            description: Incorrect password or login name
-            schema:
-             $ref: "#/definitions/ApiResponse"
-        tags:
-          - account
-        definitions:
-          ApiResponse:
-            type: "object"
-            properties:
-              message:
-                type: "string"
-              status:
-                type: "string"
-          TokensMsg:
-           type: "object"
-           properties:
-             message:
-               type: "string"
-             status:
-               type: "string"
-             access_token:
-               type: "string"
-             refresh_token:
-               type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema: UserIn
+    responses:
+      '201':
+        description: Ok
+        schema:
+          $ref: "#/definitions/TokensMsg"
+      '403':
+        description: Incorrect password or login name
+        schema:
+         $ref: "#/definitions/ApiResponse"
+    tags:
+      - account
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+      TokensMsg:
+       type: "object"
+       properties:
+         message:
+           type: "string"
+         status:
+           type: "string"
+         access_token:
+           type: "string"
+         refresh_token:
+           type: "string"
 
 
-        """
+    """
     user_try = UserLoginSchema().load(request.get_json())
     login_try = user_try['login']
     password_try = user_try['password']
@@ -124,84 +123,100 @@ def sign_in():
         access_token = create_access_token(identity=login)
         refresh_token = create_refresh_token(identity=login)
 
-        return jsonify({
-            'status': 'success',
-            'message': f'Пользователь {login} авторизован',
-            'access_token': access_token,
-            'refresh_token': refresh_token
-        }), HTTPStatus.OK
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': f'Пользователь {login} авторизован',
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                }
+            ),
+            HTTPStatus.OK,
+        )
 
-    return jsonify({
-        'status': 'error',
-        'message': 'Неверная пара логин-пароль',
-    }), HTTPStatus.FORBIDDEN
+    return (
+        jsonify(
+            {
+                'status': 'error',
+                'message': 'Неверная пара логин-пароль',
+            }
+        ),
+        HTTPStatus.FORBIDDEN,
+    )
 
 
 @accounts.route('/account', methods=['GET', 'POST'])
 @jwt_required()
 def account():
     """update password
-        ---
-        get:
-          description: update_password
-          summary: Update password
-        post:
-          description: update_password
-          summary: Update Password
-          parameters:
-          - name: login
-            in: path
-            description: login
-            schema:
-              type: string
-          - name: password
-            in: path
-            description: password
-            schema:
-              type: string
+    ---
+    get:
+      description: update_password
+      summary: Update password
+    post:
+      description: update_password
+      summary: Update Password
+      parameters:
+      - name: login
+        in: path
+        description: login
+        schema:
+          type: string
+      - name: password
+        in: path
+        description: password
+        schema:
+          type: string
 
-        responses:
-          200:
-            description: Ok
-            schema:
-             $ref: "#/definitions/ApiResponse"
-          403:
-            description: Forbidden error
-            schema:
-             $ref: "#/definitions/ApiResponse"
-          400:
-            description: User already exist
-            schema:
-             $ref: "#/definitions/ApiResponse"
-        tags:
-          - account
-        definitions:
-          ApiResponse:
-            type: "object"
-            properties:
-              message:
-                type: "string"
-              status:
-                type: "string"
+    responses:
+      200:
+        description: Ok
+        schema:
+         $ref: "#/definitions/ApiResponse"
+      403:
+        description: Forbidden error
+        schema:
+         $ref: "#/definitions/ApiResponse"
+      400:
+        description: User already exist
+        schema:
+         $ref: "#/definitions/ApiResponse"
+    tags:
+      - account
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
 
-        """
+    """
     login, user = get_login_and_user_or_403()
     if request.method == "GET":
         result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
-        return jsonify({
-            'status': 'success',
-            'message': f'Аккаунт {login}',
-            'data': result
-        }), HTTPStatus.OK
+        return (
+            jsonify(
+                {'status': 'success', 'message': f'Аккаунт {login}', 'data': result}
+            ),
+            HTTPStatus.OK,
+        )
 
     new_user_info = UserSchemaDetailed().load(request.get_json(), partial=True)
 
     if new_login := new_user_info.get('login', None):
         if User.query.filter(User.login == new_login, User.id != user.id).first():
-            return jsonify({
-                'status': 'error',
-                'message': 'Пользователь с таким login уже зарегистрирован',
-            }), HTTPStatus.BAD_REQUEST
+            return (
+                jsonify(
+                    {
+                        'status': 'error',
+                        'message': 'Пользователь с таким login уже зарегистрирован',
+                    }
+                ),
+                HTTPStatus.BAD_REQUEST,
+            )
 
     if new_password := new_user_info.pop('password', None):
         user.set_password(new_password)
@@ -209,149 +224,171 @@ def account():
     User.query.filter_by(id=user.id).update(new_user_info)
     db.session.commit()
 
-    return jsonify({
-        'status': 'success',
-        'message': f'Пользователь {login} успешно обновлен',
-    }), HTTPStatus.OK
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': f'Пользователь {login} успешно обновлен',
+            }
+        ),
+        HTTPStatus.OK,
+    )
 
 
 @accounts.route('/user-history', methods=['GET'])
 @jwt_required()
 def get_user_history():
     """get_user_history
-       ---
-       get:
-         description: get_user_history
-         summary: Get user history
-         security:
-           - jwt_access: []
-       responses:
-         200:
-           description: Return login history
-           schema:
-             $ref: "#/definitions/UserHistory"
-         403:
-           description: Forbidden error
-           schema:
-             $ref: "#/definitions/ApiResponse"
-       tags:
-         - account
-       definitions:
-         ApiResponse:
-           type: "object"
-           properties:
-             message:
-              type: "string"
-             status:
-              type: "string"
-         UserHistory:
-            type: "object"
-            properties:
-              status:
-                type: "string"
-              message:
-                type: "string"
-              data:
-                type: "object"
-                properties:
-                  user_id:
-                    type: "string"
-                    format: "uuid"
-                  user_agent:
-                     type: "string"
-                  info:
-                     type: "string"
-                  date:
-                    type: "string"
-                    format: "date"
-       """
+    ---
+    get:
+      description: get_user_history
+      summary: Get user history
+      security:
+        - jwt_access: []
+    responses:
+      200:
+        description: Return login history
+        schema:
+          $ref: "#/definitions/UserHistory"
+      403:
+        description: Forbidden error
+        schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - account
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+           type: "string"
+          status:
+           type: "string"
+      UserHistory:
+         type: "object"
+         properties:
+           status:
+             type: "string"
+           message:
+             type: "string"
+           data:
+             type: "object"
+             properties:
+               user_id:
+                 type: "string"
+                 format: "uuid"
+               user_agent:
+                  type: "string"
+               info:
+                  type: "string"
+               date:
+                 type: "string"
+                 format: "date"
+    """
     login, user = get_login_and_user_or_403()
-    paginated_user_history = History.query.filter_by(user_id=user.id).\
-        paginate(page=request.args.get('page'),
-                 per_page=request.args.get('count'))
-    return jsonify({
-            'status': 'success',
-            'message': f'История действий {login}',
-            'data': UserHistorySchema().dump(paginated_user_history.items, many=True)
-        }), HTTPStatus.OK
+    paginated_user_history = History.query.filter_by(user_id=user.id).paginate(
+        page=request.args.get('page'), per_page=request.args.get('count')
+    )
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': f'История действий {login}',
+                'data': UserHistorySchema().dump(
+                    paginated_user_history.items, many=True
+                ),
+            }
+        ),
+        HTTPStatus.OK,
+    )
 
 
 @accounts.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     """refresh password
-       ---
-       post:
-         description: refresh_token
-         summary: Refresh toke
-         security:
-           - jwt_access: []
-       responses:
-         '200':
-            description: Return refresh token
-            schema:
-              $ref: "#/definitions/AccessTokenMsg"
-       tags:
-         - account
-       definitions:
-         AccessTokenMsg:
-           type: "object"
-           properties:
-             message:
-               type: "string"
-             status:
-               type: "string"
-             access_token:
-               type: "string"
+    ---
+    post:
+      description: refresh_token
+      summary: Refresh toke
+      security:
+        - jwt_access: []
+    responses:
+      '200':
+         description: Return refresh token
+         schema:
+           $ref: "#/definitions/AccessTokenMsg"
+    tags:
+      - account
+    definitions:
+      AccessTokenMsg:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+          access_token:
+            type: "string"
 
-       """
+    """
     identity = get_jwt_identity()
     jti = get_jwt()['jti']
     redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
     access_token = create_access_token(identity=identity)
 
-    return jsonify({
-        'status': 'success',
-        'message': 'Token успешно обновлен',
-        'access_token': access_token,
-    }), HTTPStatus.OK
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': 'Token успешно обновлен',
+                'access_token': access_token,
+            }
+        ),
+        HTTPStatus.OK,
+    )
 
 
 @accounts.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     """User logout point
-       ---
-       post:
-         description: user_logout
-         summary: User logaut
-         security:
-           - jwt_access: []
-       responses:
-         '200':
-           description: Logout complete
-           schema:
-             $ref: "#/definitions/ApiResponse"
-       tags:
-         - account
-       produces:
-         - "application/json"
-       definitions:
-         ApiResponse:
-           type: "object"
-           properties:
-             message:
-              type: "string"
-             status:
-              type: "string"
-       """
+    ---
+    post:
+      description: user_logout
+      summary: User logaut
+      security:
+        - jwt_access: []
+    responses:
+      '200':
+        description: Logout complete
+        schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - account
+    produces:
+      - "application/json"
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+           type: "string"
+          status:
+           type: "string"
+    """
     login = get_jwt_identity()
     jti = get_jwt()['jti']
     redis_db.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
-    return jsonify({
-        'status': 'success',
-        'message': f'Сеанс пользователя {login} успешно завершен'
-    }), HTTPStatus.OK
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': f'Сеанс пользователя {login} успешно завершен',
+            }
+        ),
+        HTTPStatus.OK,
+    )
 
 
 @accounts.after_request
@@ -368,9 +405,13 @@ def after_request_func(response):
         login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if user:
-        history = UserHistorySchema().load({"user_id": str(user.id),
-                                            "user_agent": str(request.user_agent),
-                                            "info": f"{request.method} {request.path}"})
+        history = UserHistorySchema().load(
+            {
+                "user_id": str(user.id),
+                "user_agent": str(request.user_agent),
+                "info": f"{request.method} {request.path}",
+            }
+        )
         db.session.add(history)
         db.session.commit()
     return response

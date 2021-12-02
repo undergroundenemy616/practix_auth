@@ -1,24 +1,24 @@
 import json
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request
-from werkzeug.exceptions import abort
-
 from db.pg_db import db
-
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from models.accounts import User
 from models.rbac import Permission, Role
-from schemas.rbac import RoleAssignSchema, RoleSchema, RoleCreateSchema, RoleUpdateSchema, PermissionSchema
+from schemas.rbac import (PermissionSchema, RoleAssignSchema, RoleCreateSchema,
+                          RoleSchema, RoleUpdateSchema)
 from utils import check_permission
+from werkzeug.exceptions import abort
 
 rbac = Blueprint('rbac', __name__)
 
 
 @rbac.cli.command("add_base_data")
 def add_base_data():
-    with open('db/fixtures/roles.json') as json_roles, open('db/fixtures/permissions.json') as json_permissions:
+    with open('db/fixtures/roles.json') as json_roles, open(
+        'db/fixtures/permissions.json'
+    ) as json_permissions:
         roles_data = json.load(json_roles)
         permissions_data = json.load(json_permissions)
         for permission in permissions_data:
@@ -32,7 +32,10 @@ def add_base_data():
             role_permissions = role.pop('permissions', None)
             role_obj = Role(**role)
             if role_permissions:
-                role_permissions = [Permission.query.filter_by(name=permission).first() for permission in role_permissions]
+                role_permissions = [
+                    Permission.query.filter_by(name=permission).first()
+                    for permission in role_permissions
+                ]
             role_obj.permissions.extend(role_permissions)
             db.session.add(role_obj)
         db.session.commit()
@@ -42,40 +45,47 @@ def add_base_data():
 @jwt_required()
 def permission_check():
     """check
-        ---
-        get:
-          description: check permission
-          summary: check permission
+    ---
+    get:
+      description: check permission
+      summary: check permission
 
-        responses:
-          200:
-            description: Access granted
-            schema:
-             $ref: "#/definitions/ApiResponse"
-          400:
-            description: required_permission disabled
-            schema:
-             $ref: "#/definitions/ApiResponse"
-          403:
-            description: Access denied
-            schema:
-             $ref: "#/definitions/ApiResponse"
-        tags:
-          - permission
-        definitions:
-          ApiResponse:
-            type: "object"
-            properties:
-              message:
-                type: "string"
-              status:
-                type: "string"
-        """
+    responses:
+      200:
+        description: Access granted
+        schema:
+         $ref: "#/definitions/ApiResponse"
+      400:
+        description: required_permission disabled
+        schema:
+         $ref: "#/definitions/ApiResponse"
+      403:
+        description: Access denied
+        schema:
+         $ref: "#/definitions/ApiResponse"
+    tags:
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+    """
 
     required_permission = request.args.get('required_permission')
     if not required_permission:
-        return jsonify({"type": "error",
-                        "message": "required_permission отсутствует в параметрах"}), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify(
+                {
+                    "type": "error",
+                    "message": "required_permission отсутствует в параметрах",
+                }
+            ),
+            HTTPStatus.BAD_REQUEST,
+        )
     login = get_jwt_identity()
     if not User.check_permission(login=login, required_permission=required_permission):
         abort(HTTPStatus.FORBIDDEN)
@@ -87,55 +97,62 @@ def permission_check():
 @check_permission(required_permission='role')
 def role_assign(id):
     """role assign
-         ---
-         put:
-           description: check permission
-           summary: check permission
-           parameters:
-           - name: id
-             in: path
-             description: id
-             schema:
-              type: string
-         responses:
-           201:
-            description: Roles updated
-            schema:
-             $ref: "#/definitions/ApiResponse"
-           404:
-            description: Role not found
-            schema:
-             $ref: "#/definitions/ApiResponse"
-           400:
-            description: Permission disabled
-            schema:
-             $ref: "#/definitions/ApiResponse"
-         tags:
-           - role
-           - permission
-         definitions:
-           ApiResponse:
-             type: "object"
-             properties:
-               message:
-                 type: "string"
-               status:
-                 type: "string"
-         """
+    ---
+    put:
+      description: check permission
+      summary: check permission
+      parameters:
+      - name: id
+        in: path
+        description: id
+        schema:
+         type: string
+    responses:
+      201:
+       description: Roles updated
+       schema:
+        $ref: "#/definitions/ApiResponse"
+      404:
+       description: Role not found
+       schema:
+        $ref: "#/definitions/ApiResponse"
+      400:
+       description: Permission disabled
+       schema:
+        $ref: "#/definitions/ApiResponse"
+    tags:
+      - role
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+    """
 
     role = Role.query.filter_by(id=id).first()
     if not role:
-        return jsonify({
-            'status': "error",
-            'message': f'объект Role с id={id} не найден',
-        }), HTTPStatus.NOT_FOUND
+        return (
+            jsonify(
+                {
+                    'status': "error",
+                    'message': f'объект Role с id={id} не найден',
+                }
+            ),
+            HTTPStatus.NOT_FOUND,
+        )
     if request.method == 'PUT':
         assign_users = RoleAssignSchema().load(request.get_json())
 
         role.assign_role(assign_users)
 
-        return jsonify({"status": "success",
-                        "message": "Роли обновлены"}), HTTPStatus.OK
+        return (
+            jsonify({"status": "success", "message": "Роли обновлены"}),
+            HTTPStatus.OK,
+        )
 
 
 @rbac.route('/roles', methods=['GET', 'POST'])
@@ -143,74 +160,85 @@ def role_assign(id):
 @check_permission(required_permission='roles')
 def roles_list():
     """roles
-         ---
-         get:
-           description: get roles
-           summary: get roles
-         post:
-           description: get roles
-           summary: get roles
+    ---
+    get:
+      description: get roles
+      summary: get roles
+    post:
+      description: get roles
+      summary: get roles
 
-         responses:
-           200:
-             description: Ok
-             schema:
-               $ref: "#/definitions/DefinitionResponse"
-           201:
-             description: Created
-             schema:
-               $ref: "#/definitions/DefinitionResponse"
-           400:
-             description: Permission disabled
-             schema:
-               $ref: "#/definitions/ApiResponse"
-         tags:
-           - role
-           - permission
-         definitions:
-           ApiResponse:
-             type: "object"
-             properties:
-               message:
-                 type: "string"
-               status:
-                 type: "string"
-           DefinitionResponse:
-             type: "object"
-             properties:
-               status:
-                 type: "string"
-               message:
-                 type: "string"
-               data:
-                 type: "object"
-                 properties:
-                  id:
-                    type: "string"
-                  name:
-                    type: "string"
+    responses:
+      200:
+        description: Ok
+        schema:
+          $ref: "#/definitions/DefinitionResponse"
+      201:
+        description: Created
+        schema:
+          $ref: "#/definitions/DefinitionResponse"
+      400:
+        description: Permission disabled
+        schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - role
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+      DefinitionResponse:
+        type: "object"
+        properties:
+          status:
+            type: "string"
+          message:
+            type: "string"
+          data:
+            type: "object"
+            properties:
+             id:
+               type: "string"
+             name:
+               type: "string"
 
 
-         """
+    """
 
     if request.method == 'POST':
 
         role = RoleCreateSchema().load(request.get_json())
         db.session.add(role)
         db.session.commit()
-        return jsonify({
-                'status': 'success',
-                'message': 'Роль успешно создана',
-                'data': RoleSchema().dump(role)
-            }), HTTPStatus.CREATED
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': 'Роль успешно создана',
+                    'data': RoleSchema().dump(role),
+                }
+            ),
+            HTTPStatus.CREATED,
+        )
     else:
-        paginated_roles = Role.query.paginate(page=request.args.get('page'),
-                                              per_page=request.args.get('count'))
-        return jsonify({
-                'status': 'success',
-                'message': 'Все роли',
-                'data': RoleSchema().dump(paginated_roles.items, many=True)
-            }), HTTPStatus.OK
+        paginated_roles = Role.query.paginate(
+            page=request.args.get('page'), per_page=request.args.get('count')
+        )
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': 'Все роли',
+                    'data': RoleSchema().dump(paginated_roles.items, many=True),
+                }
+            ),
+            HTTPStatus.OK,
+        )
 
 
 @rbac.route('/roles/<uuid:id>', methods=['PUT', 'DELETE', 'GET'])
@@ -218,94 +246,111 @@ def roles_list():
 @check_permission(required_permission='role')
 def role_detail(id):
     """role
-         ---
-         get:
-           description: get role
-           summary: get role
-           parameters:
-             - name: id
-               in: path
-               description: id
-               schema:
-                type: string
+    ---
+    get:
+      description: get role
+      summary: get role
+      parameters:
+        - name: id
+          in: path
+          description: id
+          schema:
+           type: string
 
-         delete:
-           description: delete role
-           summary: delete role
-           parameters:
-             - name: id
-               in: path
-               description: id
-               schema:
-                type: string
+    delete:
+      description: delete role
+      summary: delete role
+      parameters:
+        - name: id
+          in: path
+          description: id
+          schema:
+           type: string
 
-         put:
-           description: put role
-           summary: put role
-           parameters:
-             - name: id
-               in: path
-               description: id
-               schema:
-                type: string
+    put:
+      description: put role
+      summary: put role
+      parameters:
+        - name: id
+          in: path
+          description: id
+          schema:
+           type: string
 
 
-         responses:
-           200:
-            description: Ok
-            schema:
-               $ref: "#/definitions/ApiResponse"
-           204:
-            description: Already deleted
-            schema:
-               $ref: "#/definitions/ApiResponse"
+    responses:
+      200:
+       description: Ok
+       schema:
+          $ref: "#/definitions/ApiResponse"
+      204:
+       description: Already deleted
+       schema:
+          $ref: "#/definitions/ApiResponse"
 
-           404:
-            description: Role not found
-            schema:
-               $ref: "#/definitions/ApiResponse"
-         tags:
-           - role
-           - permission
-         definitions:
-           ApiResponse:
-             type: "object"
-             properties:
-               message:
-                 type: "string"
-               status:
-                 type: "string"
+      404:
+       description: Role not found
+       schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - role
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
 
-         """
+    """
 
     role = Role.query.filter_by(id=id).first()
     if not role:
-        return jsonify({
-            'status': 'error',
-            'message': f'объект Role с id={id} не найден',
-        }), HTTPStatus.NOT_FOUND
+        return (
+            jsonify(
+                {
+                    'status': 'error',
+                    'message': f'объект Role с id={id} не найден',
+                }
+            ),
+            HTTPStatus.NOT_FOUND,
+        )
     if request.method == 'PUT':
         data = request.get_json()
         data['id'] = id
         role = RoleUpdateSchema().load(data)
         db.session.add(role)
         db.session.commit()
-        return jsonify({
-                'status': 'success',
-                'message': 'Роль успешно обновлена',
-                'data': RoleSchema().dump(role)
-            }), HTTPStatus.OK
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': 'Роль успешно обновлена',
+                    'data': RoleSchema().dump(role),
+                }
+            ),
+            HTTPStatus.OK,
+        )
     elif request.method == 'DELETE':
         db.session.delete(role)
         db.session.commit()
-        return jsonify({"status": "success",
-                        "message": f"объект Role с id={id} удален"}), HTTPStatus.NO_CONTENT
+        return (
+            jsonify({"status": "success", "message": f"объект Role с id={id} удален"}),
+            HTTPStatus.NO_CONTENT,
+        )
     else:
-        return jsonify({
-            'status': 'success',
-            'message': f"Объект Role с id={id}",
-            'data': RoleSchema().dump(role)
-        }), HTTPStatus.OK
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': f"Объект Role с id={id}",
+                    'data': RoleSchema().dump(role),
+                }
+            ),
+            HTTPStatus.OK,
+        )
 
 
 @rbac.route('permissions', methods=['POST', 'GET'])
@@ -313,53 +358,53 @@ def role_detail(id):
 @check_permission(required_permission='permissions')
 def permission_list():
     """permissions list
-          ---
-          get:
-            description: get permissions
-            summary: get permissions
-          post:
-            description: post permissions
-            summary: post permissions
+    ---
+    get:
+      description: get permissions
+      summary: get permissions
+    post:
+      description: post permissions
+      summary: post permissions
 
-          responses:
-            200:
-              description: Ok
-              schema:
-                $ref: "#/definitions/DefinitionResponse"
-            201:
-             description: Ok
-             schema:
-                $ref: "#/definitions/DefinitionResponse"
-            400:
-             description: Permission disable
-             schema:
-                $ref: "#/definitions/ApiResponse"
-          tags:
-            - permission
-          definitions:
-            ApiResponse:
-              type: "object"
-              properties:
-                message:
-                  type: "string"
-                status:
-                  type: "string"
-            DefinitionResponse:
-              type: "object"
-              properties:
-                status:
-                  type: "string"
-                message:
-                  type: "string"
-                data:
-                  type: "object"
-                  properties:
-                    id:
-                      type: "string"
-                    name:
-                      type: "string"
+    responses:
+      200:
+        description: Ok
+        schema:
+          $ref: "#/definitions/DefinitionResponse"
+      201:
+       description: Ok
+       schema:
+          $ref: "#/definitions/DefinitionResponse"
+      400:
+       description: Permission disable
+       schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+      DefinitionResponse:
+        type: "object"
+        properties:
+          status:
+            type: "string"
+          message:
+            type: "string"
+          data:
+            type: "object"
+            properties:
+              id:
+                type: "string"
+              name:
+                type: "string"
 
-          """
+    """
 
     if request.method == 'POST':
         permission = PermissionSchema().load(request.get_json())
@@ -367,19 +412,32 @@ def permission_list():
         db.session.add(permission)
         db.session.commit()
 
-        return jsonify({
-            'status': 'success',
-            'message': f"Разрешение успешно создано",
-            'data': PermissionSchema().dump(permission)
-        }), HTTPStatus.CREATED
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': f"Разрешение успешно создано",
+                    'data': PermissionSchema().dump(permission),
+                }
+            ),
+            HTTPStatus.CREATED,
+        )
     else:
-        paginated_permissions = Permission.query.paginate(page=request.args.get('page'),
-                                                          per_page=request.args.get('count'))
-        return jsonify({
-            'status': 'success',
-            'message': 'Все разрешения',
-            'data': PermissionSchema().dump(paginated_permissions.items, many=True)
-        }), HTTPStatus.OK
+        paginated_permissions = Permission.query.paginate(
+            page=request.args.get('page'), per_page=request.args.get('count')
+        )
+        return (
+            jsonify(
+                {
+                    'status': 'success',
+                    'message': 'Все разрешения',
+                    'data': PermissionSchema().dump(
+                        paginated_permissions.items, many=True
+                    ),
+                }
+            ),
+            HTTPStatus.OK,
+        )
 
 
 @rbac.route('permissions/<uuid:id>', methods=['DELETE'])
@@ -387,46 +445,55 @@ def permission_list():
 @check_permission(required_permission='permission')
 def permission_delete(id):
     """permission delete
-          ---
-          delete:
-            description: get roles
-            summary: get roles
-            parameters:
-             - name: id
-               in: path
-               description: id
-               schema:
-                type: string
+    ---
+    delete:
+      description: get roles
+      summary: get roles
+      parameters:
+       - name: id
+         in: path
+         description: id
+         schema:
+          type: string
 
 
-          responses:
-            204:
-              description: Permission deleted
-              schema:
-                $ref: "#/definitions/ApiResponse"
-            404:
-              description: Permission not found
-              schema:
-                $ref: "#/definitions/ApiResponse"
-          tags:
-            - permission
-          definitions:
-            ApiResponse:
-              type: "object"
-              properties:
-                message:
-                  type: "string"
-                status:
-                  type: "string"
-          """
+    responses:
+      204:
+        description: Permission deleted
+        schema:
+          $ref: "#/definitions/ApiResponse"
+      404:
+        description: Permission not found
+        schema:
+          $ref: "#/definitions/ApiResponse"
+    tags:
+      - permission
+    definitions:
+      ApiResponse:
+        type: "object"
+        properties:
+          message:
+            type: "string"
+          status:
+            type: "string"
+    """
 
     permission = Permission.query.filter_by(id=id).first()
     if not permission:
-        return jsonify({
-            'status': 'error',
-            'message': f'объект Permission с id={id} не найден',
-        }), HTTPStatus.NOT_FOUND
+        return (
+            jsonify(
+                {
+                    'status': 'error',
+                    'message': f'объект Permission с id={id} не найден',
+                }
+            ),
+            HTTPStatus.NOT_FOUND,
+        )
     db.session.delete(permission)
     db.session.commit()
-    return jsonify({"status": "success",
-                    "message": f"объект Permission с id={id} удален"}), HTTPStatus.NO_CONTENT
+    return (
+        jsonify(
+            {"status": "success", "message": f"объект Permission с id={id} удален"}
+        ),
+        HTTPStatus.NO_CONTENT,
+    )

@@ -1,13 +1,14 @@
+from db.pg_db import db
 from sqlalchemy.dialects.postgresql import UUID
 
-from db.pg_db import db
 from models.mixins import BaseModelMixin
-from models.accounts import User
+
+# from models.accounts import User
 
 role_permission = db.Table(
     'role_permission',
     db.Column('role_id', UUID(as_uuid=True), db.ForeignKey('role.id')),
-    db.Column('permission_id', UUID(as_uuid=True), db.ForeignKey('permission.id'))
+    db.Column('permission_id', UUID(as_uuid=True), db.ForeignKey('permission.id')),
 )
 
 
@@ -25,8 +26,11 @@ class Role(db.Model, BaseModelMixin):
 
     name = db.Column(db.String, unique=True, nullable=False)
     description = db.Column(db.String)
-    permissions = db.relationship('Permission', secondary=role_permission,
-                                  backref=db.backref('roles', lazy='dynamic'))
+    permissions = db.relationship(
+        'Permission',
+        secondary=role_permission,
+        backref=db.backref('roles', lazy='dynamic'),
+    )
     users = db.relationship('accounts.User', backref='role')
 
     def __str__(self):
@@ -37,7 +41,8 @@ class Role(db.Model, BaseModelMixin):
         return [permission.name for permission in self.permissions]
 
     def assign_role(self, data):
-        User.query.filter(User.id.in_([data.pop('users')])).update({'role_id': self.id},
-                                                                   synchronize_session=False)
+        User.query.filter(User.id.in_([data.pop('users')])).update(
+            {'role_id': self.id}, synchronize_session=False
+        )
         db.session.commit()
         return
