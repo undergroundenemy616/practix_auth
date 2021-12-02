@@ -1,9 +1,13 @@
 import functools
+import json
+from abc import abstractmethod
 from http import HTTPStatus
 
-from flask import jsonify, url_for, redirect, request, current_app
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
+from flask import current_app, jsonify, redirect, request, url_for
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                get_jwt_identity)
 from marshmallow import ValidationError
+from rauth import OAuth2Service
 from werkzeug.exceptions import abort
 
 from db.pg_db import db
@@ -11,20 +15,25 @@ from models.accounts import User
 from models.rbac import Role
 from schemas.accounts import UserLoginSchema
 
-from abc import abstractmethod
-from rauth import OAuth2Service
-import json
 
 def register_user(login, password, superuser=False):
     try:
         UserLoginSchema().load({'login': login, 'password': password})
     except ValidationError as e:
-        return jsonify({'status': 'error',
-                        'message': e.messages}), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify({'status': 'error', 'message': e.messages}),
+            HTTPStatus.BAD_REQUEST,
+        )
     if User.query.filter_by(login=login).first():
-        return jsonify({
-            'status': 'error',
-            'message': 'Пользователь с таким login уже зарегистрирован'}), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify(
+                {
+                    'status': 'error',
+                    'message': 'Пользователь с таким login уже зарегистрирован',
+                }
+            ),
+            HTTPStatus.BAD_REQUEST,
+        )
     if superuser:
         role_id = Role.query.filter_by(name='Admin').first().id
     else:
@@ -35,12 +44,17 @@ def register_user(login, password, superuser=False):
     db.session.commit()
     access_token = create_access_token(identity=login)
     refresh_token = create_refresh_token(identity=login)
-    return jsonify({
-        'status': 'success',
-        'message': f'Пользователь {login} успешно зарегистрирован',
-        'access_token': access_token,
-        'refresh_token': refresh_token
-    }), HTTPStatus.CREATED
+    return (
+        jsonify(
+            {
+                'status': 'success',
+                'message': f'Пользователь {login} успешно зарегистрирован',
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+            }
+        ),
+        HTTPStatus.CREATED,
+    )
 
 
 def check_role(required_role: str):
@@ -49,7 +63,7 @@ def check_role(required_role: str):
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
             if not User.check_permission(login=login, required_role=required_role):
-                abort(403)
+                abort(HTTPStatus.FORBIDDEN)
             return f(*args, **kwargs)
 
         return wrapper
@@ -61,7 +75,7 @@ def get_login_and_user_or_403():
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if not user:
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
     return login, user
 
 
@@ -83,9 +97,9 @@ class OAuthSignIn(object):
         pass
 
     def get_callback_url(self):
-        return url_for('accounts.oauth_callback',
-                       provider=self.provider_name,
-                       _external=True)
+        return url_for(
+            'accounts.oauth_callback', provider=self.provider_name, _external=True
+        )
 
     @classmethod
     def get_provider(cls, provider_name):
@@ -106,13 +120,14 @@ class YandexSignIn(OAuthSignIn):
             client_secret=self.consumer_secret,
             authorize_url='https://oauth.yandex.ru/authorize',
             access_token_url='https://oauth.yandex.ru/token',
-            base_url='https://login.yandex.ru/'
+            base_url='https://login.yandex.ru/',
         )
 
     def authorize(self):
-        return redirect(self.service.get_authorize_url(
-            response_type='code',
-            redirect_uri=self.get_callback_url())
+        return redirect(
+            self.service.get_authorize_url(
+                response_type='code', redirect_uri=self.get_callback_url()
+            )
         )
 
     def callback(self):
@@ -123,11 +138,8 @@ class YandexSignIn(OAuthSignIn):
             return None, None, None
 
         oauth_session = self.service.get_auth_session(
-            data={'code': request.args['code'],
-                  'grant_type': 'authorization_code'},
-            decoder=decode_json
+            data={'code': request.args['code'], 'grant_type': 'authorization_code'},
+            decoder=decode_json,
         )
         me = oauth_session.get('info').json()
-        return (me['id'],
-                me['emails'][0],
-                me['login'])
+        return (me['id'], me['emails'][0], me['login'])

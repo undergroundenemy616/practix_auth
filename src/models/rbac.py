@@ -1,5 +1,5 @@
-
 from db.pg_db import db
+
 from models.mixins import BaseModelMixin
 
 
@@ -12,5 +12,3 @@ class Role(db.Model, BaseModelMixin):
 
     def __str__(self):
         return f'<Role {self.name}>'
-
-

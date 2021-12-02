@@ -2,25 +2,25 @@ from concurrent import futures
 
 import grpc
 import jwt
+from core.app import create_app
+from models.accounts import User
+from models.rbac import Role
 
 import auth_pb2
 import auth_pb2_grpc
-from core.app import create_app
-
-from models.accounts import User
-from models.rbac import Role
 
 app = create_app()
 
 
 class CheckAuth(auth_pb2_grpc.AuthServicer):
-
     def CheckRole(self, request, context):
 
         with app.app_context():
             if not request.access_token or not request.roles:
                 return auth_pb2.CheckRoleResponse(result=False, status="Error")
-            decoded = jwt.decode(request.access_token, options={"verify_signature": False})
+            decoded = jwt.decode(
+                request.access_token, options={"verify_signature": False}
+            )
             login = decoded.get('sub', None)
             if not login:
                 return auth_pb2.CheckRoleResponse(result=False, status="Error")

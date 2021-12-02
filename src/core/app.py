@@ -1,44 +1,50 @@
+import datetime
 from http import HTTPStatus
 
+from db.pg_db import db, init_db
+from db.redis_db import init_redis_db, redis_db
 from flasgger import Swagger
-from flask import Flask, jsonify
-from flask import request
-from flask_jwt_extended import JWTManager, verify_jwt_in_request
-from flask_jwt_extended import get_jwt_identity
+from flask import Flask, jsonify, request
+from flask_jwt_extended import (JWTManager, get_jwt_identity,
+                                verify_jwt_in_request)
 from flask_migrate import Migrate
+from flask_opentracing import FlaskTracer
 from jwt import InvalidTokenError
 from marshmallow import ValidationError
-from flask_opentracing import FlaskTracer
-
-from db.pg_db import init_db, db
-from db.redis_db import init_redis_db, redis_db
-
 from models.accounts import User
-
-import datetime
-
 from tracer import setup_jaeger
 
 migrate = Migrate()
 
 
 def validation_bad_request_handler(e):
-    return jsonify({
-        'status': 'error',
-        'message': e.messages,
-    }), HTTPStatus.BAD_REQUEST
+    return (
+        jsonify(
+            {
+                'status': 'error',
+                'message': e.messages,
+            }
+        ),
+        HTTPStatus.BAD_REQUEST,
+    )
 
 
 def forbidden_handler(e):
-    return jsonify({
-        'status': 'error',
-        'message': 'Ошибка доступа',
-    }), HTTPStatus.FORBIDDEN
+    return (
+        jsonify(
+            {
+                'status': 'error',
+                'message': 'Ошибка доступа',
+            }
+        ),
+        HTTPStatus.FORBIDDEN,
+    )
 
 
 def create_app(configuration='core.config.DevelopmentBaseConfig'):
-    from api.rbac import rbac
     from api.accounts import accounts
+    from api.rbac import rbac
+
     app = Flask(__name__)
     app.config.from_object(configuration)
     init_db(app)
@@ -83,10 +89,15 @@ def create_app(configuration='core.config.DevelopmentBaseConfig'):
         result = pipe.execute()
         request_number = result[0]
         if request_number > app.config['REQUEST_LIMIT_PER_MINUTE']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Слишком много запросов',
-            }), HTTPStatus.TOO_MANY_REQUESTS
+            return (
+                jsonify(
+                    {
+                        'status': 'error',
+                        'message': 'Слишком много запросов',
+                    }
+                ),
+                HTTPStatus.TOO_MANY_REQUESTS,
+            )
 
     @jwt.token_in_blocklist_loader
     def check_if_token_is_revoked(jwt_header, jwt_payload):
