@@ -1,7 +1,6 @@
-from marshmallow import fields, Schema, post_load
-
 import validate_functions
-from models.rbac import  Role
+from marshmallow import Schema, fields, post_load
+from models.rbac import Role
 
 
 class RoleSchema(Schema):
@@ -11,7 +10,9 @@ class RoleSchema(Schema):
 
 
 class RoleAssignSchema(Schema):
-    users = fields.List(fields.UUID, validate=validate_functions.validate_exist_users, required=True)
+    users = fields.List(
+        fields.UUID, validate=validate_functions.validate_exist_users, required=True
+    )
 
 
 class RoleCreateSchema(RoleSchema):
@@ -25,7 +26,6 @@ class RoleCreateSchema(RoleSchema):
 
 
 class RoleUpdateSchema(RoleSchema):
-
     @post_load
     def update_role(self, data, **kwargs):
         role = Role.query.filter_by(id=data.pop('id')).first()

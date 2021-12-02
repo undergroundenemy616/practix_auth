@@ -10,7 +10,9 @@ def validate_password(password):
     pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
 
     if not re.match(pattern, password):
-        raise ValidationError('Пароль должен иметь буквы в обоих регистрах, цифры и быть длиной не менее 8 символов.')
+        raise ValidationError(
+            'Пароль должен иметь буквы в обоих регистрах, цифры и быть длиной не менее 8 символов.'
+        )
 
 
 def must_not_be_blank(data):
