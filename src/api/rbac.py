@@ -78,7 +78,7 @@ def permission_check():
                         "message": "required_permission отсутствует в параметрах"}), HTTPStatus.BAD_REQUEST
     login = get_jwt_identity()
     if not User.check_permission(login=login, required_permission=required_permission):
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
     return jsonify({"status": "success", "message": "Доступ разрешен"}), HTTPStatus.OK
 
 
