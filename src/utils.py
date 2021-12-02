@@ -49,7 +49,7 @@ def check_role(required_role: str):
         def wrapper(*args, **kwargs):
             login = get_jwt_identity()
             if not User.check_permission(login=login, required_role=required_role):
-                abort(403)
+                abort(HTTPStatus.FORBIDDEN)
             return f(*args, **kwargs)
 
         return wrapper
@@ -61,7 +61,7 @@ def get_login_and_user_or_403():
     login = get_jwt_identity()
     user = User.query.filter_by(login=login).first()
     if not user:
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
     return login, user
 
 

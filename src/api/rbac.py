@@ -68,7 +68,7 @@ def role_check():
                         "message": "required_role отсутствует в параметрах"}), HTTPStatus.BAD_REQUEST
     login = get_jwt_identity()
     if not User.check_role(login=login, required_role=required_role):
-        abort(403)
+        abort(HTTPStatus.FORBIDDEN)
     return jsonify({"status": "success", "message": "Доступ разрешен"}), HTTPStatus.OK
 
 
