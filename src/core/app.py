@@ -1,20 +1,22 @@
 import datetime
+import os
 from http import HTTPStatus
 
+import sentry_sdk
 from db.pg_db import db, init_db
 from db.redis_db import init_redis_db, redis_db
 from flasgger import Swagger
 from flask import Flask, jsonify, request
 from flask_jwt_extended import (JWTManager, get_jwt_identity,
                                 verify_jwt_in_request)
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 from flask_migrate import Migrate
 from flask_opentracing import FlaskTracer
 from jwt import InvalidTokenError
 from marshmallow import ValidationError
 from models.accounts import User
 from tracer import setup_jaeger
-
-migrate = Migrate()
 
 
 def validation_bad_request_handler(e):
@@ -44,6 +46,13 @@ def forbidden_handler(e):
 def create_app(configuration='core.config.DevelopmentBaseConfig'):
     from api.accounts import accounts
     from api.rbac import rbac
+
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=1.0
+    )
+    migrate = Migrate()
 
     app = Flask(__name__)
     app.config.from_object(configuration)

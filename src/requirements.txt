@@ -38,3 +38,6 @@ rauth==0.7.2
 
 jaeger-client==4.8.0
 Flask-Opentracing==1.1.0
+
+sentry-sdk[flask]==1.5.1
+
