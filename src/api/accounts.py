@@ -198,7 +198,7 @@ def account():
     """
     login, user = get_login_and_user_or_403()
     if request.method == "GET":
-        result = UserSchemaDetailed().dumps(user, ensure_ascii=False)
+        result = UserSchemaDetailed().dump(user)
         return (
             jsonify(
                 {'status': 'success', 'message': f'Аккаунт {login}', 'data': result}

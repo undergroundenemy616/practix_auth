@@ -23,6 +23,7 @@ class UserLoginSchema(Schema):
         error_messages={'required': 'Поле должно быть заполнено.'},
         validate=validate_functions.validate_password,
     )
+    email = fields.Email(required=False, allow_none=True)
 
 
 class UserHistorySchema(Schema):

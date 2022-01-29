@@ -13,15 +13,16 @@ from werkzeug.exceptions import abort
 from db.pg_db import db
 from models.accounts import User
 from models.rbac import Role
+from notify_grpc.send_register_event import send_register_notification
 from schemas.accounts import UserLoginSchema
 
 
-def register_user(login, password, superuser=False):
+def register_user(login, password, email=None, superuser=False):
     try:
-        UserLoginSchema().load({'login': login, 'password': password})
+        UserLoginSchema().load({'login': login, 'password': password, 'email': email})
     except ValidationError as e:
         return (
-            jsonify({'status': 'error', 'message': e.messages}),
+            jsonify({'status': 'error lol', 'message': e.messages}),
             HTTPStatus.BAD_REQUEST,
         )
     if User.query.filter_by(login=login).first():
@@ -38,16 +39,22 @@ def register_user(login, password, superuser=False):
         role_id = Role.query.filter_by(name='Admin').first().id
     else:
         role_id = Role.query.filter_by(name='BaseUser').first().id
-    user = User(login=login, role_id=role_id)
+    user = User(login=login, email=email, role_id=role_id)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
     access_token = create_access_token(identity=login)
     refresh_token = create_refresh_token(identity=login)
+
+    notified = None
+    if email:
+        notified = send_register_notification(email, login, password)
+
     return (
         jsonify(
             {
                 'status': 'success',
+                'notified': notified,
                 'message': f'Пользователь {login} успешно зарегистрирован',
                 'access_token': access_token,
                 'refresh_token': refresh_token,
@@ -142,4 +149,4 @@ class YandexSignIn(OAuthSignIn):
             decoder=decode_json,
         )
         me = oauth_session.get('info').json()
-        return (me['id'], me['emails'][0], me['login'])
+        return me['id'], me['emails'][0], me['login']
