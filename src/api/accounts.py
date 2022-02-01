@@ -57,7 +57,7 @@ def register():
     tags:
     - account
     """
-    return register_user(**request.get_json())
+    return register_user(**request.get_json(), request_id=request.headers.get('X-Request-Id', None))
 
 
 @accounts.route('/login', methods=['POST'])

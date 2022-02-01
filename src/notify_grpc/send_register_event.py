@@ -11,9 +11,9 @@ notify_channel = grpc.insecure_channel(
 notify_client = notify_registration_pb2_grpc.NotifyRegisterStub(notify_channel)
 
 
-def send_register_notification(email: str, login: str, password: str):
+def send_register_notification(email: str, login: str, password: str, request_id: str):
     notification_request = notify_registration_pb2.UserRegisteredRequest(
-        email=email, login=login, password=password
+        email=email, login=login, password=password, request_id=request_id
     )
     auth_response = notify_client.UserRegisterEvent(
         notification_request

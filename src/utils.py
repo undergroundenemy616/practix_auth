@@ -17,12 +17,13 @@ from notify_grpc.send_register_event import send_register_notification
 from schemas.accounts import UserLoginSchema
 
 
-def register_user(login, password, email=None, superuser=False):
+# def register_user(login, password, email=None, superuser=False):
+def register_user(login, password, email=None, request_id=None, superuser=False):
     try:
         UserLoginSchema().load({'login': login, 'password': password, 'email': email})
     except ValidationError as e:
         return (
-            jsonify({'status': 'error lol', 'message': e.messages}),
+            jsonify({'status': 'error', 'message': e.messages}),
             HTTPStatus.BAD_REQUEST,
         )
     if User.query.filter_by(login=login).first():
@@ -48,7 +49,7 @@ def register_user(login, password, email=None, superuser=False):
 
     notified = None
     if email:
-        notified = send_register_notification(email, login, password)
+        notified = send_register_notification(email, login, password, request_id)
 
     return (
         jsonify(
