@@ -3,6 +3,7 @@ from concurrent import futures
 import grpc
 import jwt
 from core.app import create_app
+from db.pg_db import db
 from models.accounts import User
 from models.rbac import Role
 
@@ -26,6 +27,22 @@ class CheckAuth(auth_pb2_grpc.AuthServicer):
                 return auth_pb2.CheckRoleResponse(result=False, status="Error")
             user = User.query.filter_by(login=login).first()
             role = Role.query.filter_by(id=user.role_id).first()
+            if user and role and role.name in request.roles:
+                return auth_pb2.CheckRoleResponse(result=True, status="Success")
+
+            return auth_pb2.CheckRoleResponse(result=False, status="Success")
+
+    def SetRole(self, request, context):
+
+        with app.app_context():
+            user_id = request.uuid
+            role_name = request.role
+            if not user_id or not role_name:
+                return auth_pb2.CheckRoleResponse(result=False, status="Not found user or role")
+            user = User.query.filter_by(id=user_id).first()
+            role = Role.query.filter_by(name=user.role_name).first()
+            user.role_id = role.id
+            db.session.commit()
             if user and role and role.name in request.roles:
                 return auth_pb2.CheckRoleResponse(result=True, status="Success")
 
