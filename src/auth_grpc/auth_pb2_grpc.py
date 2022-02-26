@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import auth_pb2 as auth__pb2
+from auth_grpc import auth_pb2 as auth__grpc_dot_auth__pb2
 
 
 class AuthStub(object):
@@ -16,13 +16,18 @@ class AuthStub(object):
         """
         self.CheckRole = channel.unary_unary(
                 '/Auth/CheckRole',
-                request_serializer=auth__pb2.CheckRoleRequest.SerializeToString,
-                response_deserializer=auth__pb2.CheckRoleResponse.FromString,
+                request_serializer=auth__grpc_dot_auth__pb2.CheckRoleRequest.SerializeToString,
+                response_deserializer=auth__grpc_dot_auth__pb2.CheckRoleResponse.FromString,
                 )
         self.SetRole = channel.unary_unary(
                 '/Auth/SetRole',
-                request_serializer=auth__pb2.SetRoleRequest.SerializeToString,
-                response_deserializer=auth__pb2.SetRoleResponse.FromString,
+                request_serializer=auth__grpc_dot_auth__pb2.SetRoleRequest.SerializeToString,
+                response_deserializer=auth__grpc_dot_auth__pb2.SetRoleResponse.FromString,
+                )
+        self.CheckUserExists = channel.unary_unary(
+                '/Auth/CheckUserExists',
+                request_serializer=auth__grpc_dot_auth__pb2.CheckUserExistsRequest.SerializeToString,
+                response_deserializer=auth__grpc_dot_auth__pb2.CheckUserExistsResponse.FromString,
                 )
 
 
@@ -41,18 +46,29 @@ class AuthServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CheckUserExists(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AuthServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'CheckRole': grpc.unary_unary_rpc_method_handler(
                     servicer.CheckRole,
-                    request_deserializer=auth__pb2.CheckRoleRequest.FromString,
-                    response_serializer=auth__pb2.CheckRoleResponse.SerializeToString,
+                    request_deserializer=auth__grpc_dot_auth__pb2.CheckRoleRequest.FromString,
+                    response_serializer=auth__grpc_dot_auth__pb2.CheckRoleResponse.SerializeToString,
             ),
             'SetRole': grpc.unary_unary_rpc_method_handler(
                     servicer.SetRole,
-                    request_deserializer=auth__pb2.SetRoleRequest.FromString,
-                    response_serializer=auth__pb2.SetRoleResponse.SerializeToString,
+                    request_deserializer=auth__grpc_dot_auth__pb2.SetRoleRequest.FromString,
+                    response_serializer=auth__grpc_dot_auth__pb2.SetRoleResponse.SerializeToString,
+            ),
+            'CheckUserExists': grpc.unary_unary_rpc_method_handler(
+                    servicer.CheckUserExists,
+                    request_deserializer=auth__grpc_dot_auth__pb2.CheckUserExistsRequest.FromString,
+                    response_serializer=auth__grpc_dot_auth__pb2.CheckUserExistsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -76,8 +92,8 @@ class Auth(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Auth/CheckRole',
-            auth__pb2.CheckRoleRequest.SerializeToString,
-            auth__pb2.CheckRoleResponse.FromString,
+            auth__grpc_dot_auth__pb2.CheckRoleRequest.SerializeToString,
+            auth__grpc_dot_auth__pb2.CheckRoleResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -93,7 +109,24 @@ class Auth(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Auth/SetRole',
-            auth__pb2.SetRoleRequest.SerializeToString,
-            auth__pb2.SetRoleResponse.FromString,
+            auth__grpc_dot_auth__pb2.SetRoleRequest.SerializeToString,
+            auth__grpc_dot_auth__pb2.SetRoleResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CheckUserExists(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Auth/CheckUserExists',
+            auth__grpc_dot_auth__pb2.CheckUserExistsRequest.SerializeToString,
+            auth__grpc_dot_auth__pb2.CheckUserExistsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
