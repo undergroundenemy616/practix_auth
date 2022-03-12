@@ -1,3 +1,6 @@
+# Стек:
+Python, Flask, Reids, PostgreSQL, Oauth2, JWT, Nginx, Docker, Gunicorn.
+
 # Репозиторий Async API:
 
 https://github.com/undergroundenemy616/practix_async_api
